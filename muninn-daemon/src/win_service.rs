@@ -101,7 +101,7 @@ fn log_event(message: &str) {
 
     unsafe {
         // Register an event source with the event log system
-        let source_name = to_lpcwstr("MyRustService");
+        let source_name = to_lpcwstr(SERVICE_NAME);
         let event_source: HANDLE = RegisterEventSourceW(ptr::null(), source_name.as_ptr());
 
         if event_source.is_null() {
