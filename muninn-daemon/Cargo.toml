@@ -31,6 +31,6 @@ futures = "0.3.31"
 name = "muninn-daemon"
 path = "src/main.rs"
 
-[target.'cfg(windows)'.bin]
+[[target.'cfg(windows)'.bin]]
 name = "muninn-service"
 path = "src/win_service.rs"
