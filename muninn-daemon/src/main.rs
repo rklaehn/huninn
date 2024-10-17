@@ -6,6 +6,9 @@ use sysinfo::System;
 mod config;
 use config::Config;
 
+#[cfg(target_os = "windows")]
+mod win_service;
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
