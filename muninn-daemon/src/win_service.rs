@@ -1,6 +1,7 @@
 use std::ffi::{OsStr, OsString};
 use std::os::windows::ffi::OsStringExt;
 use std::time::Duration;
+use std::ptr;
 use windows_service::service::{
     ServiceControl, ServiceControlAccept, ServiceExitCode, ServiceState, ServiceStatus, ServiceType,
 };
