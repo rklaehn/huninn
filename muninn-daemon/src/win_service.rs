@@ -1,4 +1,4 @@
-use std::ffi::OsString;
+use std::ffi::{OsStr, OsString};
 use std::os::windows::ffi::OsStringExt;
 use std::time::Duration;
 use windows_service::service::{
@@ -76,4 +76,45 @@ fn parse_service_arguments(num_args: u32, raw_args: *mut *mut u16) -> Vec<OsStri
             }
         })
         .collect()
+}
+
+fn to_lpcwstr(s: &str) -> Vec<u16> {
+    OsStr::new(s).encode_wide().chain(Some(0)).collect::<Vec<u16>>()
+}
+
+fn log_event(message: &str) {
+    use winapi::um::winnt::EVENTLOG_SUCCESS;
+    use winapi::um::winbase::{RegisterEventSourceW, DeregisterEventSource, ReportEventW};
+    use winapi::um::winnt::{HANDLE, LPCWSTR};
+
+    unsafe {
+        // Register an event source with the event log system
+        let source_name = to_lpcwstr("MyRustService");
+        let event_source: HANDLE = RegisterEventSourceW(ptr::null(), source_name.as_ptr());
+
+        if event_source.is_null() {
+            eprintln!("Failed to register event source");
+            return;
+        }
+
+        // Convert the message to LPCWSTR
+        let message_wide = to_lpcwstr(message);
+        let message_ptrs: [LPCWSTR; 1] = [message_wide.as_ptr()];
+
+        // Log the event
+        ReportEventW(
+            event_source,
+            EVENTLOG_SUCCESS, // Type of event (success, error, etc.)
+            0,                // Category
+            0,                // Event ID
+            ptr::null(),       // User SID (none)
+            1,                // Number of strings
+            0,                // Size of binary data
+            message_ptrs.as_ptr(),
+            ptr::null(),       // Binary data (none)
+        );
+
+        // Deregister the event source when done
+        DeregisterEventSource(event_source);
+    }
 }
