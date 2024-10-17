@@ -150,30 +150,3 @@ async fn handle_incoming(
     connection.closed().await;
     Ok(())
 }
-
-#[cfg(windows)]
-#[macro_use]
-extern crate windows_service;
-
-#[cfg(windows)]
-mod service {
-    use std::ffi::OsString;
-
-    use windows_service::service_dispatcher;
-
-    use super::{run_daemon, Config};
-
-    define_windows_service!(ffi_service_main, my_service_main);
-
-    fn my_service_main(arguments: Vec<OsString>) {
-        let mut config = Config::get_or_create().expect("Failed to load config");
-        let rt = tokio::runtime::Builder::new_multi_thread()
-            .enable_all()
-            .build()
-            .unwrap();
-        let res = rt.block_on(run_daemon(config));
-        if let Err(e) = res {
-            eprintln!("Error: {}", e);
-        }
-    }
-}
