@@ -53,7 +53,6 @@ async fn handle_incoming(
     allowed_nodes: BTreeSet<NodeId>,
 ) -> anyhow::Result<()> {
     let mut accepting = incoming.accept()?;
-    let alpn = accepting.alpn().await?;
     let connection = accepting.await?;
     let remote_node_id = iroh_net::endpoint::get_remote_node_id(&connection)?;
     if !allowed_nodes.contains(&remote_node_id) {
@@ -69,15 +68,22 @@ async fn handle_incoming(
     let msg = postcard::from_bytes::<muninn_proto::Request>(&msg)?;
     match msg {
         Request::ListProcesses => {
+            tracing::info!("Listing processes");
             let tasks = list_processes();
             let response = ListProcessesResponse { tasks };
             let response = postcard::to_allocvec(&response)?;
             send.write_all(&response).await?;
             send.finish()?;
+            connection.closed().await;
         }
         Request::KillProcess(pid) => {
-            kill_process_by_id(pid)?;
+            tracing::info!("Killing process {}", pid);
+            let res = kill_process_by_id(pid);
+            let response = res.err().map(|e| e.to_string()).unwrap_or_else(|| "OK".to_string());
+            let response = postcard::to_allocvec(&response)?;
+            send.write_all(&response).await?;
             send.finish()?;
+            connection.closed().await;
         }
         Request::Shutdown => {
             // shutdown_system();

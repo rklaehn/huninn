@@ -11,6 +11,7 @@ pub struct Args {
 pub enum Subcommand {
     AddNode(AddNode),
     ListTasks(ListTasks),
+    KillTask(KillTask),
     Shutdown(Shutdown),
 }
 
@@ -24,6 +25,12 @@ pub struct AddNode {
 #[derive(Debug, Clone, Parser)]
 pub struct ListTasks {
     pub id: Vec<String>,
+}
+
+#[derive(Debug, Clone, Parser)]
+pub struct KillTask {
+    pub id: String,
+    pub pid: u32,
 }
 
 #[derive(Debug, Clone, Parser)]

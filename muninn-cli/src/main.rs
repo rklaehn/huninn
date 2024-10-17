@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use anyhow::Result;
+use args::Subcommand;
 use clap::Parser;
 use iroh_net::{endpoint, NodeId};
 
@@ -20,7 +21,7 @@ async fn main() -> anyhow::Result<()> {
             .bind()
     };
     match args.subcommand {
-        args::Subcommand::ListTasks(list_tasks) => {
+        Subcommand::ListTasks(list_tasks) => {
             let nodes = list_tasks
                 .id
                 .into_iter()
@@ -48,12 +49,33 @@ async fn main() -> anyhow::Result<()> {
                 for (pid, name) in msg.tasks {
                     println!("{}: {}", pid, name);
                 }
+                connection.close(0u32.into(), b"OK");
             }
         }
-        args::Subcommand::Shutdown(shutdown) => {
+        Subcommand::KillTask(kill_task) => {
+            let node = if let Ok(nodeid) = NodeId::from_str(&kill_task.id) {
+                nodeid
+            } else if let Some(nodeid) = config.nodes.get(&kill_task.id) {
+                nodeid.clone()
+            } else {
+                return Err(anyhow::anyhow!("Neither node id nor valid alias: {}", kill_task.id));
+            };
+            let endpoint = create_endpoint().await?;
+            let connection = endpoint.connect(node.into(), muninn_proto::ALPN).await?;
+            let (mut send, mut recv) = connection.open_bi().await?;
+            let request = muninn_proto::Request::KillProcess(kill_task.pid);
+            let request = postcard::to_allocvec(&request)?;
+            send.write_all(&request).await?;
+            send.finish()?;
+            let msg = recv.read_to_end(muninn_proto::MAX_RESPONSE_SIZE).await?;
+            let msg = postcard::from_bytes::<String>(&msg)?;
+            println!("{}", msg);
+            connection.close(0u32.into(), b"OK");
+        }
+        Subcommand::Shutdown(shutdown) => {
             println!("Shutting down {:?}", shutdown.id);
         }
-        args::Subcommand::AddNode(add_node) => {
+        Subcommand::AddNode(add_node) => {
             config.nodes.insert(add_node.name, add_node.addr);
             config.save()?;
         }
