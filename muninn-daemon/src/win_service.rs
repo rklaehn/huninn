@@ -106,14 +106,14 @@ fn log_event(message: &str) {
         // Log the event
         ReportEventW(
             event_source,
-            EVENTLOG_SUCCESS, // Type of event (success, error, etc.)
-            0,                // Category
-            0,                // Event ID
-            ptr::null(),       // User SID (none)
-            1,                // Number of strings
-            0,                // Size of binary data
-            message_ptrs.as_ptr(),
-            ptr::null(),       // Binary data (none)
+            EVENTLOG_SUCCESS,               // Type of event (success, error, etc.)
+            0,                              // Category
+            0,                              // Event ID
+            ptr::null_mut(),                // User SID (none) - must be mutable
+            1,                              // Number of strings
+            0,                              // Size of binary data
+            message_ptrs.as_ptr() as *mut _, // Cast to *mut *const u16
+            ptr::null_mut(),                // Binary data (none) - must be mutable
         );
 
         // Deregister the event source when done
