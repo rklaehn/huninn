@@ -1,0 +1,12 @@
+[package]
+name = "muninn-proto"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.89"
+clap = { version = "4.5.20", features = ["derive"] }
+iroh-net = "0.26.0"
+postcard = "1.0.10"
+serde = "1.0.210"
+tokio = { version = "1.40.0", features = ["full"] }

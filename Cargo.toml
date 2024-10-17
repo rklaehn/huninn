@@ -1,0 +1,10 @@
+[workspace]
+members = [
+  "muninn-cli",
+  "muninn-daemon",
+  "muninn-proto",
+]
+resolver = "2"
+
+[profile.release]
+debug = true
