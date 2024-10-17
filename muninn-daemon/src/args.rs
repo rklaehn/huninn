@@ -11,16 +11,9 @@ pub struct Args {
 #[derive(Debug, Clone, Parser)]
 pub enum Subcommand {
     AllowRemote(AllowRemote),
-    TestAudio(TestAudio),
 }
 
 #[derive(Debug, Clone, Parser)]
 pub struct AllowRemote {
     pub addr: NodeId,
-}
-
-#[derive(Debug, Clone, Parser)]
-pub struct TestAudio {
-    #[clap(default_value = "rickroll")]
-    pub source: AudioSource,
 }

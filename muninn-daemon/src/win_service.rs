@@ -1,7 +1,7 @@
 #[cfg(windows)]
 use std::ffi::OsString;
-use std::time::Duration;
 use std::os::windows::ffi::OsStringExt;
+use std::time::Duration;
 use windows_service::service::{
     ServiceControl, ServiceControlAccept, ServiceExitCode, ServiceState, ServiceStatus, ServiceType,
 };
@@ -29,7 +29,9 @@ extern "system" fn ffi_service_main(num_args: u32, raw_args: *mut *mut u16) {
             wait_hint: Duration::from_secs(10),
             process_id: None,
         };
-        status_handle.set_service_status(next_status.clone()).unwrap();
+        status_handle
+            .set_service_status(next_status.clone())
+            .unwrap();
 
         // Simulate a running service (could be your logic here)
         std::thread::sleep(Duration::from_secs(60)); // Simulates service work
@@ -50,7 +52,6 @@ fn service_handler(control_event: ServiceControl) -> ServiceControlHandlerResult
         _ => ServiceControlHandlerResult::NotImplemented,
     }
 }
-
 
 // Parse the raw service arguments into a Vec<OsString>
 fn parse_service_arguments(num_args: u32, raw_args: *mut *mut u16) -> Vec<OsString> {
