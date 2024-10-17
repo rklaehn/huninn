@@ -2,7 +2,7 @@ use std::{io, time::Duration};
 
 use bytes::Bytes;
 use cpal::traits::HostTrait;
-use rodio::DeviceTrait;
+use rodio::{source, DeviceTrait, Source};
 
 pub fn list_processes() -> Vec<(u32, String)> {
     // Create a System object to get information about the system.
@@ -227,6 +227,7 @@ pub fn play_audio_on_all_devices(audio_data: Bytes) -> anyhow::Result<Vec<String
 fn play_sound_on_device(audio_data: io::Cursor<Bytes>, stream_handle: &rodio::OutputStreamHandle) {
     let sink = rodio::Sink::try_new(stream_handle).unwrap();
     let source = rodio::Decoder::new(audio_data).unwrap();
+    let source = source.amplify(10.0);
     sink.append(source);
     sink.sleep_until_end(); // Block until the sound finishes playing
 }
