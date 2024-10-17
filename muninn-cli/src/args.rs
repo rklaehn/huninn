@@ -35,8 +35,7 @@ pub struct RemoveNode {
 }
 
 #[derive(Debug, Clone, Parser)]
-pub struct ListNodes {
-}
+pub struct ListNodes {}
 
 #[derive(Debug, Clone, Parser)]
 pub struct SystemInfo {

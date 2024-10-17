@@ -74,10 +74,19 @@ pub fn get_uptime() -> io::Result<Duration> {
 #[cfg(target_os = "macos")]
 fn parse_boottime(output: &str) -> io::Result<u64> {
     // Example sysctl output: "{ sec = 1632438400, usec = 123456 } Wed Sep 24 12:34:56 2021"
-    let start = output.find("sec = ").ok_or(io::Error::new(io::ErrorKind::Other, "Invalid sysctl output"))?;
-    let end = output[start..].find(',').ok_or(io::Error::new(io::ErrorKind::Other, "Invalid sysctl output"))?;
+    let start = output.find("sec = ").ok_or(io::Error::new(
+        io::ErrorKind::Other,
+        "Invalid sysctl output",
+    ))?;
+    let end = output[start..].find(',').ok_or(io::Error::new(
+        io::ErrorKind::Other,
+        "Invalid sysctl output",
+    ))?;
     let boot_time_str = &output[start + 6..start + end]; // 6 is length of "sec = "
-    let boot_time: u64 = boot_time_str.trim().parse().map_err(|_| io::Error::new(io::ErrorKind::Other, "Failed to parse boot time"))?;
+    let boot_time: u64 = boot_time_str
+        .trim()
+        .parse()
+        .map_err(|_| io::Error::new(io::ErrorKind::Other, "Failed to parse boot time"))?;
     Ok(boot_time)
 }
 
@@ -134,10 +143,10 @@ pub fn kill_process_by_id(pid: u32) -> io::Result<()> {
 
     #[cfg(windows)]
     {
+        use winapi::shared::minwindef::DWORD;
         use winapi::um::handleapi::CloseHandle;
         use winapi::um::processthreadsapi::{OpenProcess, TerminateProcess};
         use winapi::um::winnt::PROCESS_TERMINATE;
-        use winapi::shared::minwindef::DWORD;
 
         unsafe {
             let handle = OpenProcess(PROCESS_TERMINATE, 0, pid as DWORD);
@@ -165,14 +174,22 @@ pub fn kill_process_by_id(pid: u32) -> io::Result<()> {
 pub fn play_audio_on_all_devices(audio_data: Bytes) -> anyhow::Result<Vec<String>> {
     // Get the default host and all available output devices
     let host = cpal::default_host();
-    let devices = host.output_devices().expect("Failed to get output devices").collect::<Vec<_>>();
+    let devices = host
+        .output_devices()
+        .expect("Failed to get output devices")
+        .collect::<Vec<_>>();
 
     if devices.len() == 0 {
         eprintln!("No audio output devices found!");
         return Ok(vec![]);
     } else {
         for device in &devices {
-            println!("Found output device: {}", device.name().unwrap_or_else(|_| "Unknown Device".to_string()));
+            println!(
+                "Found output device: {}",
+                device
+                    .name()
+                    .unwrap_or_else(|_| "Unknown Device".to_string())
+            );
         }
     }
 
@@ -180,7 +197,9 @@ pub fn play_audio_on_all_devices(audio_data: Bytes) -> anyhow::Result<Vec<String
     // Iterate over all output devices and play the sound
     std::thread::scope(|scope| {
         for device in devices {
-            let device_name = device.name().unwrap_or_else(|_| "Unknown Device".to_string());
+            let device_name = device
+                .name()
+                .unwrap_or_else(|_| "Unknown Device".to_string());
             println!("Playing on: {}", device_name);
 
             // Create a new output stream and stream handle for each device
@@ -193,7 +212,10 @@ pub fn play_audio_on_all_devices(audio_data: Bytes) -> anyhow::Result<Vec<String
                     play_sound_on_device(cursor, &stream_handle);
                 });
             } else {
-                results.push(format!("Error: failed to create stream for device: {}", device_name));
+                results.push(format!(
+                    "Error: failed to create stream for device: {}",
+                    device_name
+                ));
             }
         }
     });
@@ -206,5 +228,5 @@ fn play_sound_on_device(audio_data: io::Cursor<Bytes>, stream_handle: &rodio::Ou
     let sink = rodio::Sink::try_new(stream_handle).unwrap();
     let source = rodio::Decoder::new(audio_data).unwrap();
     sink.append(source);
-    sink.sleep_until_end();  // Block until the sound finishes playing
+    sink.sleep_until_end(); // Block until the sound finishes playing
 }

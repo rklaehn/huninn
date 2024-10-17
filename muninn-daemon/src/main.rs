@@ -1,6 +1,6 @@
-use std::collections::BTreeSet;
 use bytes::Bytes;
 use iroh_net::{endpoint, NodeId};
+use std::collections::BTreeSet;
 
 mod config;
 use config::Config;
@@ -65,7 +65,10 @@ async fn handle_incoming(
         Request::KillProcess(pid) => {
             tracing::info!("Killing process {}", pid);
             let res = kill_process_by_id(pid);
-            let response = res.err().map(|e| e.to_string()).unwrap_or_else(|| "OK".to_string());
+            let response = res
+                .err()
+                .map(|e| e.to_string())
+                .unwrap_or_else(|| "OK".to_string());
             let response = postcard::to_allocvec(&response)?;
             send.write_all(&response).await?;
             send.finish()?;
@@ -74,7 +77,9 @@ async fn handle_incoming(
         Request::GetSystemInfo => {
             tracing::info!("Getting system info");
             let uptime = get_uptime()?;
-            let hostname = hostname::get()?.into_string().map_err(|_| anyhow::anyhow!("Invalid hostname"))?;
+            let hostname = hostname::get()?
+                .into_string()
+                .map_err(|_| anyhow::anyhow!("Invalid hostname"))?;
             let response = muninn_proto::SysInfoResponse { uptime, hostname };
             let response = postcard::to_allocvec(&response)?;
             send.write_all(&response).await?;
