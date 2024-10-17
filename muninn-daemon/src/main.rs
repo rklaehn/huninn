@@ -152,6 +152,10 @@ async fn handle_incoming(
 }
 
 #[cfg(windows)]
+#[macro_use]
+extern crate windows_service;
+
+#[cfg(windows)]
 mod service {
     use std::ffi::OsString;
 
