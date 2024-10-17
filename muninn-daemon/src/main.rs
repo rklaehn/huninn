@@ -1,6 +1,7 @@
 use bytes::Bytes;
-use iroh_net::{endpoint, NodeId};
+use iroh_net::{endpoint, ticket::NodeTicket, NodeId};
 use std::collections::BTreeSet;
+use futures::stream::StreamExt;
 
 mod config;
 use config::Config;
@@ -23,7 +24,11 @@ async fn main() -> anyhow::Result<()> {
         .alpns(vec![muninn_proto::ALPN.into()])
         .bind()
         .await?;
-
+    endpoint.watch_home_relay().next().await;
+    let info = endpoint.node_addr().await?;
+    tracing::info!("Listening on {:?}",  info);
+    let ticket = NodeTicket::from(info);
+    println!("My ticket: {}", ticket);
     while let Some(incoming) = endpoint.accept().await {
         tokio::spawn(handle_incoming(incoming, config.allowed_nodes.clone()));
     }

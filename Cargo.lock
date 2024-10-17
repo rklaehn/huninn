@@ -2296,6 +2296,7 @@ dependencies = [
  "clap",
  "cpal",
  "dirs-next",
+ "futures",
  "hostname 0.4.0",
  "iroh-net",
  "libc",
