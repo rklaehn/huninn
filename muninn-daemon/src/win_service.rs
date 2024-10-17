@@ -10,7 +10,7 @@ use windows_service::service_control_handler::{self, ServiceControlHandlerResult
 use windows_service::service_dispatcher;
 
 mod shared;
-use shared::{run_daemon, Config};
+use shared::{run_daemon, Config, muninn_data_root};
 
 const SERVICE_NAME: &str = "Muninn-Service";
 
@@ -40,6 +40,7 @@ extern "system" fn ffi_service_main(num_args: u32, raw_args: *mut *mut u16) {
         // Simulate a running service (could be your logic here)
         let rt = tokio::runtime::Runtime::new().expect("create tokio runtime failed");
         let config = Config::get_or_create().expect("get or create config failed");
+        log_event(format!("Starting muninn-daemon with data dir: {}", muninn_data_root().display()));
         rt.block_on(run_daemon(config)).expect("run daemon failed");
 
         // When the service is stopped, update the status

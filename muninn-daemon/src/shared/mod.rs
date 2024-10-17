@@ -5,7 +5,7 @@ use iroh_net::{endpoint, ticket::NodeTicket, NodeId};
 use std::collections::BTreeSet;
 
 mod config;
-pub use config::Config;
+pub use config::{Config, muninn_data_root};
 
 mod os;
 use os::{get_uptime, kill_process_by_id, list_processes, play_sound_on_default_device};
