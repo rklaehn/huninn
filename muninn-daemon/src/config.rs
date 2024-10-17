@@ -91,4 +91,14 @@ impl Config {
             Ok(config)
         }
     }
+
+    pub fn save(&self) -> anyhow::Result<()> {
+        let dir = muninn_data_root()?;
+        std::fs::create_dir_all(&dir)?;
+        let path = dir.join("config.toml");
+        let data = toml::to_string_pretty(&TomlConfig::from(self.clone()))?;
+        tracing::info!("Saving config to {}", path.display());
+        std::fs::write(&path, &data)?;
+        Ok(())
+    }
 }

@@ -3,7 +3,7 @@ use std::str::FromStr;
 use anyhow::Result;
 use args::Subcommand;
 use clap::Parser;
-use iroh_net::NodeId;
+use iroh_net::{ticket::NodeTicket, NodeAddr, NodeId};
 
 mod args;
 mod config;
@@ -11,20 +11,25 @@ mod config;
 /// Given a list of ids from the cli, return a list of node ids and their names
 ///
 /// If the list is empty, return all nodes in the config
-fn get_nodes(ids: Vec<String>, config: &config::Config) -> Result<Vec<(String, NodeId)>> {
+fn get_nodes(ids: Vec<String>, config: &config::Config) -> Result<Vec<(String, NodeAddr)>> {
     if ids.is_empty() {
         config
             .nodes
             .iter()
-            .map(|(name, id)| Ok((name.clone(), id.clone())))
+            .map(|(name, id)| Ok((name.clone(), id.clone().into())))
             .collect()
     } else {
         ids.into_iter()
             .map(|id| {
                 if let Ok(nodeid) = NodeId::from_str(&id) {
-                    Ok((nodeid.to_string(), nodeid))
+                    Ok((nodeid.to_string(), NodeAddr::from(nodeid)))
+                } else if let Ok(ticket) = NodeTicket::from_str(&id) {
+                    Ok((
+                        ticket.node_addr().node_id.to_string(),
+                        ticket.node_addr().clone(),
+                    ))
                 } else if let Some(nodeid) = config.nodes.get(&id) {
-                    Ok((id, nodeid.clone()))
+                    Ok((id, nodeid.clone().into()))
                 } else {
                     Err(anyhow::anyhow!("Neither node id nor valid alias: {}", id))
                 }
