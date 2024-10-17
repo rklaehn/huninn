@@ -18,6 +18,27 @@ use os::{
 
 use muninn_proto::{AudioSource, ListProcessesResponse, Request};
 
+async fn run_daemon(config: Config) -> anyhow::Result<()> {
+    println!("I am {}", config.secret_key.public());
+    let endpoint = iroh_net::Endpoint::builder()
+        .discovery(Box::new(
+            iroh_net::discovery::pkarr::PkarrPublisher::n0_dns(config.secret_key.clone()),
+        ))
+        .secret_key(config.secret_key.clone())
+        .alpns(vec![muninn_proto::ALPN.into()])
+        .bind()
+        .await?;
+    endpoint.watch_home_relay().next().await;
+    let info = endpoint.node_addr().await?;
+    tracing::info!("Listening on {:?}", info);
+    let ticket = NodeTicket::from(info);
+    println!("My ticket: {}", ticket);
+    while let Some(incoming) = endpoint.accept().await {
+        tokio::spawn(handle_incoming(incoming, config.allowed_nodes.clone()));
+    }
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
@@ -41,24 +62,8 @@ async fn main() -> anyhow::Result<()> {
                 play_sound_on_default_device(audio_data)?;
             }
         }
-        return Ok(());
-    }
-    println!("I am {}", config.secret_key.public());
-    let endpoint = iroh_net::Endpoint::builder()
-        .discovery(Box::new(
-            iroh_net::discovery::pkarr::PkarrPublisher::n0_dns(config.secret_key.clone()),
-        ))
-        .secret_key(config.secret_key.clone())
-        .alpns(vec![muninn_proto::ALPN.into()])
-        .bind()
-        .await?;
-    endpoint.watch_home_relay().next().await;
-    let info = endpoint.node_addr().await?;
-    tracing::info!("Listening on {:?}", info);
-    let ticket = NodeTicket::from(info);
-    println!("My ticket: {}", ticket);
-    while let Some(incoming) = endpoint.accept().await {
-        tokio::spawn(handle_incoming(incoming, config.allowed_nodes.clone()));
+    } else {
+        run_daemon(config).await?;
     }
     Ok(())
 }
@@ -144,4 +149,27 @@ async fn handle_incoming(
     }
     connection.closed().await;
     Ok(())
+}
+
+#[cfg(windows)]
+mod service {
+    use std::ffi::OsString;
+
+    use windows_service::service_dispatcher;
+
+    use super::{run_daemon, Config};
+
+    define_windows_service!(ffi_service_main, my_service_main);
+
+    fn my_service_main(arguments: Vec<OsString>) {
+        let mut config = Config::get_or_create()?;
+        let rt = tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        let res = rt.block_on(run_daemon(config));
+        if let Err(e) = res {
+            eprintln!("Error: {}", e);
+        }
+    }
 }
