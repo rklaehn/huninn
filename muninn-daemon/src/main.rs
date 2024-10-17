@@ -162,7 +162,7 @@ mod service {
     define_windows_service!(ffi_service_main, my_service_main);
 
     fn my_service_main(arguments: Vec<OsString>) {
-        let mut config = Config::get_or_create()?;
+        let mut config = Config::get_or_create().expect("Failed to load config");
         let rt = tokio::runtime::Builder::new_multi_thread()
             .enable_all()
             .build()
