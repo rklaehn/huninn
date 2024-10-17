@@ -12,7 +12,7 @@ use args::Args;
 
 mod os;
 use os::{
-    get_uptime, kill_process_by_id, list_processes, play_audio_on_all_devices,
+    get_uptime, kill_process_by_id, list_processes,
     play_sound_on_default_device,
 };
 
