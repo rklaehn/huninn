@@ -2076,6 +2076,7 @@ dependencies = [
  "clap",
  "dirs-next",
  "iroh-net",
+ "libc",
  "muninn-proto",
  "postcard",
  "serde",

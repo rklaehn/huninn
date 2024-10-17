@@ -39,12 +39,12 @@ async fn main() -> anyhow::Result<()> {
                 println!("Listing tasks for {}", name);
                 let connection = endpoint.connect(id.into(), muninn_proto::ALPN).await?;
                 let (mut send, mut recv) = connection.open_bi().await?;
-                let request = muninn_proto::Request::ListTasks;
+                let request = muninn_proto::Request::ListProcesses;
                 let request = postcard::to_allocvec(&request)?;
                 send.write_all(&request).await?;
                 send.finish()?;
                 let msg = recv.read_to_end(muninn_proto::MAX_RESPONSE_SIZE).await?;
-                let msg = postcard::from_bytes::<muninn_proto::ListTasksResponse>(&msg)?;
+                let msg = postcard::from_bytes::<muninn_proto::ListProcessesResponse>(&msg)?;
                 for (pid, name) in msg.tasks {
                     println!("{}: {}", pid, name);
                 }

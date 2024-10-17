@@ -6,6 +6,25 @@ use sysinfo::System;
 mod config;
 use config::Config;
 
+use muninn_proto::{self as proto, ListProcessesResponse, Request};
+
+use std::io;
+
+#[cfg(unix)]
+use libc::{kill, SIGKILL};
+
+#[cfg(windows)]
+use winapi::um::handleapi::CloseHandle;
+#[cfg(windows)]
+use winapi::um::processthreadsapi::OpenProcess;
+#[cfg(windows)]
+use winapi::um::processthreadsapi::TerminateProcess;
+#[cfg(windows)]
+use winapi::um::winnt::PROCESS_TERMINATE;
+
+#[cfg(windows)]
+use winapi::shared::minwindef::DWORD;
+
 #[cfg(target_os = "windows")]
 mod win_service;
 
@@ -49,14 +68,18 @@ async fn handle_incoming(
     let msg = recv.read_to_end(muninn_proto::MAX_REQUEST_SIZE).await?;
     let msg = postcard::from_bytes::<muninn_proto::Request>(&msg)?;
     match msg {
-        muninn_proto::Request::ListTasks => {
+        Request::ListProcesses => {
             let tasks = list_processes();
-            let response = muninn_proto::ListTasksResponse { tasks };
+            let response = ListProcessesResponse { tasks };
             let response = postcard::to_allocvec(&response)?;
             send.write_all(&response).await?;
             send.finish()?;
         }
-        muninn_proto::Request::Shutdown => {
+        Request::KillProcess(pid) => {
+            kill_process_by_id(pid)?;
+            send.finish()?;
+        }
+        Request::Shutdown => {
             // shutdown_system();
         }
     }
@@ -64,7 +87,7 @@ async fn handle_incoming(
     Ok(())
 }
 
-fn list_processes() -> Vec<(u64, String)> {
+fn list_processes() -> Vec<(u32, String)> {
     // Create a System object to get information about the system.
     let mut system = System::new_all();
 
@@ -74,13 +97,42 @@ fn list_processes() -> Vec<(u64, String)> {
     // Create a vector to store the PIDs and names of the processes.
     let mut processes = Vec::new();
     for (pid, process) in system.processes() {
-        processes.push((pid.as_u32().into(), process.name().to_string_lossy().into()));
+        processes.push((pid.as_u32(), process.name().to_string_lossy().into()));
     }
 
     processes
 }
 
-fn shutdown_system() {
+#[cfg(unix)]
+pub fn kill_process_by_id(pid: u32) -> io::Result<()> {
+    let res = unsafe { kill(pid as i32, SIGKILL) };
+    if res == 0 {
+        Ok(())
+    } else {
+        Err(io::Error::last_os_error())
+    }
+}
+
+#[cfg(windows)]
+pub fn kill_process_by_id(pid: u32) -> io::Result<()> {
+    unsafe {
+        let handle = OpenProcess(PROCESS_TERMINATE, 0, pid as DWORD);
+        if handle.is_null() {
+            return Err(io::Error::last_os_error());
+        }
+
+        let result = TerminateProcess(handle, 1); // Exit code 1
+        CloseHandle(handle);
+
+        if result != 0 {
+            Ok(())
+        } else {
+            Err(io::Error::last_os_error())
+        }
+    }
+}
+
+pub fn shutdown_system() {
     #[cfg(target_os = "linux")]
     {
         use libc::{reboot, LINUX_REBOOT_CMD_POWER_OFF};

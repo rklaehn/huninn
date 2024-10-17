@@ -2,13 +2,14 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Request {
-    ListTasks,
+    ListProcesses,
+    KillProcess(u32),
     Shutdown,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ListTasksResponse {
-    pub tasks: Vec<(u64, String)>,
+pub struct ListProcessesResponse {
+    pub tasks: Vec<(u32, String)>,
 }
 
 pub const ALPN: &[u8] = b"muninn";
