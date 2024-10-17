@@ -1,5 +1,6 @@
 use std::ffi::{OsStr, OsString};
 use std::os::windows::ffi::OsStringExt;
+use std::os::windows::ffi::OsStrExt;
 use std::time::Duration;
 use std::ptr;
 use windows_service::service::{
