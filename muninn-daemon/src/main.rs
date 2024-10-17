@@ -11,7 +11,10 @@ mod args;
 use args::Args;
 
 mod os;
-use os::{get_uptime, kill_process_by_id, list_processes, play_audio_on_all_devices};
+use os::{
+    get_uptime, kill_process_by_id, list_processes, play_audio_on_all_devices,
+    play_sound_on_default_device,
+};
 
 use muninn_proto::{AudioSource, ListProcessesResponse, Request};
 
@@ -35,7 +38,7 @@ async fn main() -> anyhow::Result<()> {
                         anyhow::bail!("URL playback not implemented");
                     }
                 };
-                play_audio_on_all_devices(audio_data)?;
+                play_sound_on_default_device(audio_data)?;
             }
         }
         return Ok(());
@@ -125,7 +128,7 @@ async fn handle_incoming(
                     anyhow::bail!("URL playback not implemented: {}", url);
                 }
             };
-            let response = play_audio_on_all_devices(audio_data);
+            let response = play_sound_on_default_device(audio_data);
             let response = match response {
                 Ok(_) => "OK".to_string(),
                 Err(e) => e.to_string(),

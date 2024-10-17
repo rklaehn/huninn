@@ -231,3 +231,14 @@ fn play_sound_on_device(audio_data: io::Cursor<Bytes>, stream_handle: &rodio::Ou
     sink.append(source);
     sink.sleep_until_end(); // Block until the sound finishes playing
 }
+
+pub fn play_sound_on_default_device(audio_data: Bytes) -> anyhow::Result<()> {
+    let audio_data = io::Cursor::new(audio_data);
+    let (_stream, stream_handle) = rodio::OutputStream::try_default()?;
+    let sink = rodio::Sink::try_new(&stream_handle)?;
+    let source = rodio::Decoder::new(audio_data)?;
+    let source = source.amplify(10.0);
+    sink.append(source);
+    sink.sleep_until_end(); // Block until the sound finishes playing
+    Ok(())
+}
