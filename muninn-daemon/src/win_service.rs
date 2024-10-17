@@ -1,8 +1,8 @@
 use std::ffi::{OsStr, OsString};
-use std::os::windows::ffi::OsStringExt;
 use std::os::windows::ffi::OsStrExt;
-use std::time::Duration;
+use std::os::windows::ffi::OsStringExt;
 use std::ptr;
+use std::time::Duration;
 use windows_service::service::{
     ServiceControl, ServiceControlAccept, ServiceExitCode, ServiceState, ServiceStatus, ServiceType,
 };
@@ -10,7 +10,7 @@ use windows_service::service_control_handler::{self, ServiceControlHandlerResult
 use windows_service::service_dispatcher;
 
 mod shared;
-use shared::{run_daemon, Config, muninn_data_root};
+use shared::{muninn_data_root, run_daemon, Config};
 
 const SERVICE_NAME: &str = "Muninn-Service";
 
@@ -40,7 +40,13 @@ extern "system" fn ffi_service_main(num_args: u32, raw_args: *mut *mut u16) {
         // Simulate a running service (could be your logic here)
         let rt = tokio::runtime::Runtime::new().expect("create tokio runtime failed");
         let config = Config::get_or_create().expect("get or create config failed");
-        log_event(&format!("Starting muninn-daemon with data dir: {}", muninn_data_root().unwrap().display()));
+        let id = config.secret_key.public().to_string();
+        let data_dir = muninn_data_root().unwrap();
+        log_event(&format!(
+            "Starting muninn-daemon with id {} and data dir: {}",
+            id,
+            data_dir.display()
+        ));
         rt.block_on(run_daemon(config)).expect("run daemon failed");
 
         // When the service is stopped, update the status
@@ -82,12 +88,15 @@ fn parse_service_arguments(num_args: u32, raw_args: *mut *mut u16) -> Vec<OsStri
 }
 
 fn to_lpcwstr(s: &str) -> Vec<u16> {
-    OsStr::new(s).encode_wide().chain(Some(0)).collect::<Vec<u16>>()
+    OsStr::new(s)
+        .encode_wide()
+        .chain(Some(0))
+        .collect::<Vec<u16>>()
 }
 
 fn log_event(message: &str) {
+    use winapi::um::winbase::{DeregisterEventSource, RegisterEventSourceW, ReportEventW};
     use winapi::um::winnt::EVENTLOG_SUCCESS;
-    use winapi::um::winbase::{RegisterEventSourceW, DeregisterEventSource, ReportEventW};
     use winapi::um::winnt::{HANDLE, LPCWSTR};
 
     unsafe {
@@ -107,14 +116,14 @@ fn log_event(message: &str) {
         // Log the event
         ReportEventW(
             event_source,
-            EVENTLOG_SUCCESS,               // Type of event (success, error, etc.)
-            0,                              // Category
-            0,                              // Event ID
-            ptr::null_mut(),                // User SID (none) - must be mutable
-            1,                              // Number of strings
-            0,                              // Size of binary data
+            EVENTLOG_SUCCESS,                // Type of event (success, error, etc.)
+            0,                               // Category
+            0,                               // Event ID
+            ptr::null_mut(),                 // User SID (none) - must be mutable
+            1,                               // Number of strings
+            0,                               // Size of binary data
             message_ptrs.as_ptr() as *mut _, // Cast to *mut *const u16
-            ptr::null_mut(),                // Binary data (none) - must be mutable
+            ptr::null_mut(),                 // Binary data (none) - must be mutable
         );
 
         // Deregister the event source when done
