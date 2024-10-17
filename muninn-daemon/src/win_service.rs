@@ -1,4 +1,3 @@
-#[cfg(windows)]
 use std::ffi::OsString;
 use std::os::windows::ffi::OsStringExt;
 use std::time::Duration;
@@ -7,6 +6,9 @@ use windows_service::service::{
 };
 use windows_service::service_control_handler::{self, ServiceControlHandlerResult};
 use windows_service::service_dispatcher;
+
+mod shared;
+use shared::{run_daemon, Config};
 
 const SERVICE_NAME: &str = "Muninn-Service";
 
@@ -31,17 +33,21 @@ extern "system" fn ffi_service_main(num_args: u32, raw_args: *mut *mut u16) {
         };
         status_handle
             .set_service_status(next_status.clone())
-            .unwrap();
+            .expect("set service status failed");
 
         // Simulate a running service (could be your logic here)
-        std::thread::sleep(Duration::from_secs(60)); // Simulates service work
+        let rt = tokio::runtime::Runtime::new().expect("create tokio runtime failed");
+        let config = Config::get_or_create().expect("get or create config failed");
+        rt.block_on(run_daemon(config)).expect("run daemon failed");
 
         // When the service is stopped, update the status
         let stopped_status = ServiceStatus {
             current_state: ServiceState::Stopped,
             ..next_status
         };
-        status_handle.set_service_status(stopped_status).unwrap();
+        status_handle
+            .set_service_status(stopped_status)
+            .expect("set service status failed");
     }
 }
 
