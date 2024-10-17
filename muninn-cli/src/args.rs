@@ -1,5 +1,6 @@
 use clap::Parser;
 use iroh_net::NodeId;
+use muninn_proto::AudioSource;
 
 #[derive(Debug, Clone, Parser)]
 pub struct Args {
@@ -10,8 +11,13 @@ pub struct Args {
 #[derive(Debug, Clone, Parser)]
 pub enum Subcommand {
     AddNode(AddNode),
+    RemoveNode(RemoveNode),
+    ListNodes(ListNodes),
+
     ListTasks(ListTasks),
     KillTask(KillTask),
+    SystemInfo(SystemInfo),
+    PlayAudio(PlayAudio),
     Shutdown(Shutdown),
 }
 
@@ -20,6 +26,21 @@ pub struct AddNode {
     #[clap(long)]
     pub name: String,
     pub addr: NodeId,
+}
+
+#[derive(Debug, Clone, Parser)]
+pub struct RemoveNode {
+    #[clap(long)]
+    pub name: String,
+}
+
+#[derive(Debug, Clone, Parser)]
+pub struct ListNodes {
+}
+
+#[derive(Debug, Clone, Parser)]
+pub struct SystemInfo {
+    pub id: Vec<String>,
 }
 
 #[derive(Debug, Clone, Parser)]
@@ -36,4 +57,11 @@ pub struct KillTask {
 #[derive(Debug, Clone, Parser)]
 pub struct Shutdown {
     pub id: Vec<String>,
+}
+
+#[derive(Debug, Clone, Parser)]
+pub struct PlayAudio {
+    pub id: Vec<String>,
+    #[clap(long)]
+    pub source: AudioSource,
 }

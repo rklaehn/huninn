@@ -1,32 +1,14 @@
 use std::collections::BTreeSet;
-
+use bytes::Bytes;
 use iroh_net::{endpoint, NodeId};
-use sysinfo::System;
 
 mod config;
 use config::Config;
 
-use muninn_proto::{self as proto, ListProcessesResponse, Request};
+mod os;
+use os::{get_uptime, kill_process_by_id, list_processes, play_audio_on_all_devices};
 
-use std::io;
-
-#[cfg(unix)]
-use libc::{kill, SIGKILL};
-
-#[cfg(windows)]
-use winapi::um::handleapi::CloseHandle;
-#[cfg(windows)]
-use winapi::um::processthreadsapi::OpenProcess;
-#[cfg(windows)]
-use winapi::um::processthreadsapi::TerminateProcess;
-#[cfg(windows)]
-use winapi::um::winnt::PROCESS_TERMINATE;
-
-#[cfg(windows)]
-use winapi::shared::minwindef::DWORD;
-
-#[cfg(target_os = "windows")]
-mod win_service;
+use muninn_proto::{AudioSource, ListProcessesResponse, Request};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -48,11 +30,15 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
+const WAKE_UP: &[u8] = include_bytes!("../assets/wake_up.mp3");
+const GO_TO_BED: &[u8] = include_bytes!("../assets/go_to_bed.mp3");
+const RICKROLL: &[u8] = include_bytes!("../assets/rickroll.mp3");
+
 async fn handle_incoming(
     incoming: endpoint::Incoming,
     allowed_nodes: BTreeSet<NodeId>,
 ) -> anyhow::Result<()> {
-    let mut accepting = incoming.accept()?;
+    let accepting = incoming.accept()?;
     let connection = accepting.await?;
     let remote_node_id = iroh_net::endpoint::get_remote_node_id(&connection)?;
     if !allowed_nodes.contains(&remote_node_id) {
@@ -85,93 +71,39 @@ async fn handle_incoming(
             send.finish()?;
             connection.closed().await;
         }
+        Request::GetSystemInfo => {
+            tracing::info!("Getting system info");
+            let uptime = get_uptime()?;
+            let hostname = hostname::get()?.into_string().map_err(|_| anyhow::anyhow!("Invalid hostname"))?;
+            let response = muninn_proto::SysInfoResponse { uptime, hostname };
+            let response = postcard::to_allocvec(&response)?;
+            send.write_all(&response).await?;
+            send.finish()?;
+            connection.closed().await;
+        }
+        Request::PlayAudio(source) => {
+            let audio_data: Bytes = match source {
+                AudioSource::WakeUp => WAKE_UP.into(),
+                AudioSource::GoToBed => GO_TO_BED.into(),
+                AudioSource::RickRoll => RICKROLL.into(),
+                AudioSource::Url(url) => {
+                    anyhow::bail!("URL playback not implemented: {}", url);
+                }
+            };
+            let response = play_audio_on_all_devices(audio_data);
+            let response = match response {
+                Ok(_) => "OK".to_string(),
+                Err(e) => e.to_string(),
+            };
+            let response = postcard::to_allocvec(&response)?;
+            send.write_all(&response).await?;
+            send.finish()?;
+            connection.closed().await;
+        }
         Request::Shutdown => {
             // shutdown_system();
         }
     }
     connection.closed().await;
     Ok(())
-}
-
-fn list_processes() -> Vec<(u32, String)> {
-    // Create a System object to get information about the system.
-    let mut system = System::new_all();
-
-    // Refresh the list of processes.
-    system.refresh_all();
-
-    // Create a vector to store the PIDs and names of the processes.
-    let mut processes = Vec::new();
-    for (pid, process) in system.processes() {
-        processes.push((pid.as_u32(), process.name().to_string_lossy().into()));
-    }
-
-    processes
-}
-
-#[cfg(unix)]
-pub fn kill_process_by_id(pid: u32) -> io::Result<()> {
-    let res = unsafe { kill(pid as i32, SIGKILL) };
-    if res == 0 {
-        Ok(())
-    } else {
-        Err(io::Error::last_os_error())
-    }
-}
-
-#[cfg(windows)]
-pub fn kill_process_by_id(pid: u32) -> io::Result<()> {
-    unsafe {
-        let handle = OpenProcess(PROCESS_TERMINATE, 0, pid as DWORD);
-        if handle.is_null() {
-            return Err(io::Error::last_os_error());
-        }
-
-        let result = TerminateProcess(handle, 1); // Exit code 1
-        CloseHandle(handle);
-
-        if result != 0 {
-            Ok(())
-        } else {
-            Err(io::Error::last_os_error())
-        }
-    }
-}
-
-pub fn shutdown_system() {
-    #[cfg(target_os = "linux")]
-    {
-        use libc::{reboot, LINUX_REBOOT_CMD_POWER_OFF};
-        use std::process::exit;
-
-        unsafe {
-            if reboot(LINUX_REBOOT_CMD_POWER_OFF) != 0 {
-                eprintln!("Failed to shut down system");
-                exit(1);
-            }
-        }
-    }
-
-    #[cfg(target_os = "macos")]
-    {
-        use std::process::Command;
-        Command::new("shutdown")
-            .arg("-h")
-            .arg("now")
-            .status()
-            .expect("Failed to shut down system");
-    }
-
-    #[cfg(target_os = "windows")]
-    {
-        use std::ptr;
-        use winapi::um::winuser::ExitWindowsEx;
-        use winapi::um::winuser::EWX_POWEROFF;
-
-        unsafe {
-            if ExitWindowsEx(EWX_POWEROFF, 0) == 0 {
-                eprintln!("Failed to shut down system");
-            }
-        }
-    }
 }

@@ -3,7 +3,7 @@ use std::str::FromStr;
 use anyhow::Result;
 use args::Subcommand;
 use clap::Parser;
-use iroh_net::{endpoint, NodeId};
+use iroh_net::NodeId;
 
 mod args;
 mod config;
@@ -72,6 +72,63 @@ async fn main() -> anyhow::Result<()> {
             println!("{}", msg);
             connection.close(0u32.into(), b"OK");
         }
+        Subcommand::SystemInfo(system_info) => {
+            let endpoint = create_endpoint().await?;
+            let nodes = system_info.id
+                .into_iter()
+                .map(|id| {
+                    if let Ok(nodeid) = NodeId::from_str(&id) {
+                        Ok((nodeid.to_string(), nodeid))
+                    } else if let Some(nodeid) = config.nodes.get(&id) {
+                        Ok((id, nodeid.clone()))
+                    } else {
+                        Err(anyhow::anyhow!("Neither node id nor valid alias: {}", id))
+                    }
+                })
+                .collect::<Result<Vec<_>>>()?;
+            for (name, id) in nodes {
+                println!("Getting system info for {}", name);
+                let connection = endpoint.connect(id.into(), muninn_proto::ALPN).await?;
+                let (mut send, mut recv) = connection.open_bi().await?;
+                let request = muninn_proto::Request::GetSystemInfo;
+                let request = postcard::to_allocvec(&request)?;
+                send.write_all(&request).await?;
+                send.finish()?;
+                let msg = recv.read_to_end(muninn_proto::MAX_RESPONSE_SIZE).await?;
+                let msg = postcard::from_bytes::<muninn_proto::SysInfoResponse>(&msg)?;
+                println!("Hostname: {}", msg.hostname);
+                println!("Uptime: {:?}", msg.uptime);
+                connection.close(0u32.into(), b"OK");
+            }
+        }
+        Subcommand::PlayAudio(play_audio) => {
+            let endpoint = create_endpoint().await?;
+            let nodes = play_audio.id
+                .into_iter()
+                .map(|id| {
+                    if let Ok(nodeid) = NodeId::from_str(&id) {
+                        Ok((nodeid.to_string(), nodeid))
+                    } else if let Some(nodeid) = config.nodes.get(&id) {
+                        Ok((id, nodeid.clone()))
+                    } else {
+                        Err(anyhow::anyhow!("Neither node id nor valid alias: {}", id))
+                    }
+                })
+                .collect::<Result<Vec<_>>>()?;
+            for (name, id) in nodes {
+                println!("Playing audio on {}", name);
+                let connection = endpoint.connect(id.into(), muninn_proto::ALPN).await?;
+                let (mut send, mut recv) = connection.open_bi().await?;
+                let request = muninn_proto::Request::PlayAudio(play_audio.source.clone());
+                let request = postcard::to_allocvec(&request)?;
+                send.write_all(&request).await?;
+                send.finish()?;
+                let msg = recv.read_to_end(muninn_proto::MAX_RESPONSE_SIZE).await?;
+                let msg = postcard::from_bytes::<String>(&msg)?;
+                println!("{}", msg);
+                connection.close(0u32.into(), b"OK");
+            }
+        }
         Subcommand::Shutdown(shutdown) => {
             println!("Shutting down {:?}", shutdown.id);
         }
@@ -79,6 +136,19 @@ async fn main() -> anyhow::Result<()> {
             config.nodes.insert(add_node.name, add_node.addr);
             config.save()?;
         }
+        Subcommand::RemoveNode(remove_node) => {
+            if config.nodes.remove(&remove_node.name).is_some() {
+                config.save()?;
+            } else {
+                println!("No alias with name {}", remove_node.name);
+            }
+        }
+        Subcommand::ListNodes(_) => {
+            for (name, id) in &config.nodes {
+                println!("{}: {}", name, id);
+            }
+        }
+
     }
     Ok(())
 }
