@@ -308,7 +308,7 @@ mod munin_service {
         let info_bytes = postcard::to_allocvec(&info).unwrap();
         for path in args {
             let path = std::path::PathBuf::from(path);
-            std::fs::write(path, info_bytes).ok();
+            std::fs::write(path, &info_bytes).ok();
         }
         let res = rt.block_on(run_daemon(config, shutdown_rx));
         let exit_code = if res.is_err() { 1 } else { 0 };
