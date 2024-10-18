@@ -24,8 +24,7 @@ rodio = "0.19.0"
 cpal = "0.15.3"
 bytes = "1.7.2"
 windows-service = "0.7.0"
-winapi = { version = "0.3.9", features = ["winuser", "evntlog", "handleapi"] }
-# ["winbase", , "handleapi", "minwinbase"] }
+winapi = { version = "0.3.9", features = ["winuser"] }
 windows-sys = { version = "0.59.0", features = ["Win32"] }
 widestring = "1.1.0"
 futures = "0.3.31"
