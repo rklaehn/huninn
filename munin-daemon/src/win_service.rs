@@ -19,7 +19,7 @@ mod munin_service {
     };
     use clap::Parser;
     use std::{
-        ffi::{OsStr, OsString}, time::Duration
+        ffi::OsString, time::Duration
     };
     use windows_service::{
         define_windows_service,
@@ -214,9 +214,11 @@ mod munin_service {
     }
 
     fn start() -> windows_service::Result<()> {
+        let tempdir = tempfile::tempdir().unwrap();
+        let pubkey = tempdir.path().join("pubkey.bin");
+        let pubkey_str = pubkey.to_string_lossy().to_string();
         let service = get_service(SERVICE_NAME, ServiceAccess::START)?;
-        let args: &[&OsStr] = &[];
-        service.start(args)?;
+        service.start(&[&pubkey_str])?;
         Ok(())
     }
 
