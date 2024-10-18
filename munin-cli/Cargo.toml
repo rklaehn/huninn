@@ -1,10 +1,10 @@
 [package]
-name = "muninn-cli"
+name = "munin-cli"
 version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "muninn"
+name = "munin"
 path = "src/main.rs"
 
 [dependencies]
@@ -15,7 +15,7 @@ postcard = "1.0.10"
 quic-rpc = "0.12.1"
 serde = "1.0.210"
 tokio = { version = "1.40.0", features = ["full"] }
-muninn-proto = { path = "../muninn-proto" }
+munin-proto = { path = "../munin-proto" }
 tracing = "0.1.40"
 dirs-next = "2.0.0"
 toml = "0.8.19"

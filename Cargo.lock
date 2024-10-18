@@ -2270,14 +2270,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "muninn-cli"
+name = "munin-cli"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
  "dirs-next",
  "iroh-net",
- "muninn-proto",
+ "munin-proto",
  "postcard",
  "quic-rpc",
  "serde",
@@ -2288,7 +2288,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "muninn-daemon"
+name = "munin-daemon"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -2300,7 +2300,7 @@ dependencies = [
  "hostname 0.4.0",
  "iroh-net",
  "libc",
- "muninn-proto",
+ "munin-proto",
  "nix 0.29.0",
  "postcard",
  "rodio",
@@ -2315,7 +2315,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "muninn-proto"
+name = "munin-proto"
 version = "0.1.0"
 dependencies = [
  "anyhow",

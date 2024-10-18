@@ -1,8 +1,8 @@
 [workspace]
 members = [
-  "muninn-cli",
-  "muninn-daemon",
-  "muninn-proto",
+  "munin-cli",
+  "munin-daemon",
+  "munin-proto",
 ]
 resolver = "2"
 

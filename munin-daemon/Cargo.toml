@@ -1,8 +1,8 @@
 [package]
-name = "muninn-daemon"
+name = "munin-daemon"
 version = "0.1.0"
 edition = "2021"
-default-run = "muninn-daemon"
+default-run = "munin-daemon"
 
 [dependencies]
 anyhow = "1.0.89"
@@ -12,7 +12,7 @@ postcard = "1.0.10"
 serde = "1.0.210"
 sysinfo = "0.32.0"
 tokio = { version = "1.40.0", features = ["full"] }
-muninn-proto = { path = "../muninn-proto" }
+munin-proto = { path = "../munin-proto" }
 tracing = "0.1.40"
 dirs-next = "2.0.0"
 tracing-subscriber = "0.3.18"
@@ -28,9 +28,9 @@ winapi = { version = "0.3.9", features = ["winuser"] }
 futures = "0.3.31"
 
 [[bin]]
-name = "muninn-daemon"
+name = "munin-daemon"
 path = "src/main.rs"
 
 [[bin]]
-name = "muninn-service"
+name = "munin-service"
 path = "src/win_service.rs"
