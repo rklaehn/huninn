@@ -234,8 +234,11 @@ mod munin_service {
                 let data = std::fs::read(serviceinfo).unwrap();
                 let info: ServiceInfo = postcard::from_bytes(&data).unwrap();
                 println!("Public key: {}", info.pubkey);
-                println!("Allowed nodes: {:?}", info.allowed_nodes);
-                println!("Service data path: {:?}", info.path);
+                println!("Allowed nodes");
+                for node in info.allowed_nodes {
+                    println!("  {}", node);
+                }
+                println!("Service config path: {:?}", info.path.join("config.toml"));
                 break;
             }
         }
