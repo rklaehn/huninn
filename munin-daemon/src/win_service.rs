@@ -297,12 +297,6 @@ mod munin_service {
 
         let rt = tokio::runtime::Runtime::new().unwrap();
         let config = Config::get_or_create().unwrap();
-        let start_message = format!(
-            "Starting using data dir\n{}\nand id\n{}",
-            munin_data_root().unwrap().display(),
-            config.secret_key.public()
-        );
-        write_event_to_system_log(SERVICE_NAME, &start_message);
         let info = ServiceInfo {
             pubkey: config.secret_key.public(),
             allowed_nodes: config.allowed_nodes.clone(),
@@ -330,51 +324,51 @@ mod munin_service {
         Ok(())
     }
 
-    use std::ptr::null_mut;
-    use widestring::U16CString;
-    use winapi::um::handleapi::CloseHandle;
-    use winapi::um::{
-        winbase::{RegisterEventSourceW, ReportEventW},
-        winnt::EVENTLOG_INFORMATION_TYPE,
-    };
+    // use std::ptr::null_mut;
+    // use widestring::U16CString;
+    // use winapi::um::handleapi::CloseHandle;
+    // use winapi::um::{
+    //     winbase::{RegisterEventSourceW, ReportEventW},
+    //     winnt::EVENTLOG_INFORMATION_TYPE,
+    // };
 
-    fn write_event_to_system_log(source: &str, event_message: &str) {
-        let source_u16 = U16CString::from_str(source).unwrap();
-        let message_u16 = U16CString::from_str(event_message).unwrap();
+    // fn write_event_to_system_log(source: &str, event_message: &str) {
+    //     let source_u16 = U16CString::from_str(source).unwrap();
+    //     let message_u16 = U16CString::from_str(event_message).unwrap();
 
-        unsafe {
-            // Register the event source with the Windows Event Log
-            let event_source = RegisterEventSourceW(null_mut(), source_u16.as_ptr());
-            if event_source.is_null() {
-                println!("Failed to register event source");
-                return;
-            }
+    //     unsafe {
+    //         // Register the event source with the Windows Event Log
+    //         let event_source = RegisterEventSourceW(null_mut(), source_u16.as_ptr());
+    //         if event_source.is_null() {
+    //             println!("Failed to register event source");
+    //             return;
+    //         }
 
-            // Create a pointer to the message
-            let mut message_ptr = message_u16.as_ptr();
+    //         // Create a pointer to the message
+    //         let mut message_ptr = message_u16.as_ptr();
 
-            // Write an informational event (EVENTLOG_INFORMATION_TYPE = 0x0004)
-            if ReportEventW(
-                event_source,
-                EVENTLOG_INFORMATION_TYPE, // Event type: Information
-                0,                         // Event category
-                0x1000,                    // Event ID (customizable)
-                null_mut(),                // No specific user SID
-                1,                         // Number of strings (we're passing one)
-                0,                         // No binary data
-                &mut message_ptr,          // Pointer to the message
-                null_mut(),                // No binary data
-            ) == 0
-            {
-                println!("Failed to write to the event log");
-            } else {
-                println!("Successfully wrote to the event log");
-            }
+    //         // Write an informational event (EVENTLOG_INFORMATION_TYPE = 0x0004)
+    //         if ReportEventW(
+    //             event_source,
+    //             EVENTLOG_INFORMATION_TYPE, // Event type: Information
+    //             0,                         // Event category
+    //             0x1000,                    // Event ID (customizable)
+    //             null_mut(),                // No specific user SID
+    //             1,                         // Number of strings (we're passing one)
+    //             0,                         // No binary data
+    //             &mut message_ptr,          // Pointer to the message
+    //             null_mut(),                // No binary data
+    //         ) == 0
+    //         {
+    //             println!("Failed to write to the event log");
+    //         } else {
+    //             println!("Successfully wrote to the event log");
+    //         }
 
-            // Deregister the event source
-            CloseHandle(event_source);
-        }
-    }
+    //         // Deregister the event source
+    //         CloseHandle(event_source);
+    //     }
+    // }
 
     #[derive(Debug, Clone, Serialize, Deserialize)]
     struct ServiceInfo {

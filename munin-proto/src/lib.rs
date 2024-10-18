@@ -38,7 +38,7 @@ impl std::str::FromStr for AudioSource {
             "wakeup" => Ok(AudioSource::WakeUp),
             "alarm" => Ok(AudioSource::Alarm),
             "rickroll" => Ok(AudioSource::RickRoll),
-            _ if s.starts_with("url(") && s.ends_with(")") => {
+            _ if s.starts_with("url(") && s.ends_with(')') => {
                 let url = &s[4..s.len() - 1]; // Extract the URL inside the "Url()" format
                 Ok(AudioSource::Url(url.to_string()))
             }
