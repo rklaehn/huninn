@@ -43,7 +43,7 @@ pub async fn run_daemon(
 }
 
 const WAKE_UP: &[u8] = include_bytes!("../../assets/wake_up.mp3");
-const GO_TO_BED: &[u8] = include_bytes!("../../assets/go_to_bed.mp3");
+const ALARM: &[u8] = include_bytes!("../../assets/alarm.mp3");
 const RICKROLL: &[u8] = include_bytes!("../../assets/rickroll.mp3");
 
 async fn handle_incoming(
@@ -101,7 +101,7 @@ async fn handle_incoming(
         Request::PlayAudio(source) => {
             let audio_data: Bytes = match source {
                 AudioSource::WakeUp => WAKE_UP.into(),
-                AudioSource::GoToBed => GO_TO_BED.into(),
+                AudioSource::Alarm => ALARM.into(),
                 AudioSource::RickRoll => RICKROLL.into(),
                 AudioSource::Url(url) => {
                     anyhow::bail!("URL playback not implemented: {}", url);

@@ -19,8 +19,7 @@ mod munin_service {
     };
     use clap::Parser;
     use std::{
-        ffi::{OsStr, OsString},
-        time::Duration,
+        ffi::{OsStr, OsString}, os::windows::ffi::OsStrExt, time::Duration
     };
     use windows_service::{
         define_windows_service,
@@ -31,6 +30,7 @@ mod munin_service {
         service_control_handler::{self, ServiceControlHandlerResult},
         service_dispatcher, Result,
     };
+    use winapi::shared::winerror;
 
     use super::args::Args;
 
@@ -219,6 +219,8 @@ mod munin_service {
         let service = get_service(SERVICE_NAME, ServiceAccess::START)?;
         let args: &[&OsStr] = &[];
         service.start(args)?;
+        std::thread::sleep(Duration::from_secs(1));
+        read_event_log();
         Ok(())
     }
 
@@ -299,7 +301,7 @@ mod munin_service {
 
     use std::ptr::null_mut;
     use widestring::U16CString;
-    use winapi::um::handleapi::CloseHandle;
+    use winapi::{shared::{minwindef::{DWORD, LPBYTE}, winerror::{ERROR_HANDLE_EOF, ERROR_INSUFFICIENT_BUFFER}}, um::{handleapi::CloseHandle, winnt::{EVENTLOGRECORD, EVENTLOG_FORWARDS_READ, EVENTLOG_SEQUENTIAL_READ}}};
     use winapi::um::{
         winbase::{RegisterEventSourceW, ReportEventW},
         winnt::EVENTLOG_INFORMATION_TYPE,
@@ -340,6 +342,79 @@ mod munin_service {
 
             // Deregister the event source
             CloseHandle(event_source);
+        }
+    }
+
+    fn read_event_log() {
+        // Name of the log to read (Application, System, etc.)
+        let log_name = OsString::from("Application").encode_wide().chain(Some(0)).collect::<Vec<u16>>();
+    
+        unsafe {
+            // Open the Application event log
+            let h_event_log = OpenEventLogW(null_mut(), log_name.as_ptr());
+            if h_event_log.is_null() {
+                eprintln!("Failed to open event log.");
+                return;
+            }
+    
+            let mut buffer: Vec<u8> = vec![0; 1024]; // Start with a 1024 byte buffer
+            let mut bytes_read: DWORD = 0;
+            let mut min_number_of_bytes_needed: DWORD = 0;
+    
+            // Read event log entries
+            loop {
+                let success = ReadEventLogW(
+                    h_event_log,
+                    EVENTLOG_SEQUENTIAL_READ | EVENTLOG_FORWARDS_READ,
+                    0,
+                    buffer.as_mut_ptr() as LPBYTE,
+                    buffer.len() as DWORD,
+                    &mut bytes_read,
+                    &mut min_number_of_bytes_needed,
+                );
+    
+                if success == 0 {
+                    // Read failed, check the error code
+                    let error_code = GetLastError();
+                    match error_code {
+                        winerror::ERROR_HANDLE_EOF => {
+                            // Reached the end of the event log
+                            println!("Reached the end of the event log.");
+                            break;
+                        }
+                        winerror::ERROR_INSUFFICIENT_BUFFER => {
+                            // Buffer too small, resize it
+                            println!("Buffer too small, resizing to {} bytes.", min_number_of_bytes_needed);
+                            buffer.resize(min_number_of_bytes_needed as usize, 0);
+                            continue;
+                        }
+                        _ => {
+                            // Some other error occurred
+                            eprintln!("Error reading event log. Error code: {}", error_code);
+                            break;
+                        }
+                    }
+                } else {
+                    // Successfully read an event log entry
+                    let record: *mut EVENTLOGRECORD = buffer.as_ptr() as *mut EVENTLOGRECORD;
+                    let record_ref: &EVENTLOGRECORD = &*record;
+    
+                    // Print the event record ID and event type
+                    println!(
+                        "Event ID: {}, Event Type: {}",
+                        record_ref.EventID & 0xFFFF,  // Lower 16 bits of EventID
+                        record_ref.EventType,
+                    );
+    
+                    // Here you can add additional processing for the event record
+    
+                    // Break after reading one event for simplicity in this example
+                    break;
+                }
+            }
+    
+            // Close the event log
+            CloseEventLog(h_event_log);
         }
     }
 }

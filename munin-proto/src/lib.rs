@@ -14,7 +14,7 @@ pub enum Request {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum AudioSource {
     WakeUp,
-    GoToBed,
+    Alarm,
     RickRoll,
     Url(String),
 }
@@ -23,7 +23,7 @@ impl fmt::Display for AudioSource {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             AudioSource::WakeUp => write!(f, "WakeUp"),
-            AudioSource::GoToBed => write!(f, "GoToBed"),
+            AudioSource::Alarm => write!(f, "Alarm"),
             AudioSource::RickRoll => write!(f, "RickRoll"),
             AudioSource::Url(url) => write!(f, "Url({})", url),
         }
@@ -36,7 +36,7 @@ impl std::str::FromStr for AudioSource {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "wakeup" => Ok(AudioSource::WakeUp),
-            "gotobed" => Ok(AudioSource::GoToBed),
+            "alarm" => Ok(AudioSource::Alarm),
             "rickroll" => Ok(AudioSource::RickRoll),
             _ if s.starts_with("url(") && s.ends_with(")") => {
                 let url = &s[4..s.len() - 1]; // Extract the URL inside the "Url()" format
