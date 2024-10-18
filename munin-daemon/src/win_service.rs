@@ -19,6 +19,7 @@ mod munin_service {
         shared::{munin_data_root, run_daemon, Config},
     };
     use clap::Parser;
+    use iroh_net::NodeId;
     use std::{ffi::OsString, time::Duration};
     use windows_service::{
         define_windows_service,
@@ -58,6 +59,7 @@ mod munin_service {
                 }
                 Subcommand::Start(_start) => {
                     start()?;
+
                 }
                 Subcommand::Stop(_stop) => {
                     stop()?;
@@ -221,6 +223,15 @@ mod munin_service {
         let pubkey_str = pubkey.to_string_lossy().to_string();
         let service = get_service(SERVICE_NAME, ServiceAccess::START)?;
         service.start(&[&pubkey_str])?;
+        for _ in 0..20 {
+            std::thread::sleep(std::time::Duration::from_millis(500));
+            if pubkey.exists() {
+                let pubkey = std::fs::read(pubkey).unwrap();
+                let pubkey = NodeId::try_from(pubkey.as_slice()).unwrap();
+                println!("Public key: {}", pubkey);
+                break;
+            }
+        }
         Ok(())
     }
 
