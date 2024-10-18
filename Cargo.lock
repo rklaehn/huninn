@@ -2310,8 +2310,10 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-subscriber",
+ "widestring",
  "winapi",
  "windows-service",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]

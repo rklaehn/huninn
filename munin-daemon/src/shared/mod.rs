@@ -1,25 +1,27 @@
 use bytes::Bytes;
-use clap::Parser;
 use futures::stream::StreamExt;
 use iroh_net::{endpoint, ticket::NodeTicket, NodeId};
 use std::collections::BTreeSet;
 
 mod config;
-pub use config::{muninn_data_root, Config};
+pub use config::Config;
 
 mod os;
 use os::{get_uptime, kill_process_by_id, list_processes, play_sound_on_default_device};
 
-use muninn_proto::{AudioSource, ListProcessesResponse, Request};
+use munin_proto::{AudioSource, ListProcessesResponse, Request};
 
-pub async fn run_daemon(config: Config) -> anyhow::Result<()> {
+pub async fn run_daemon(
+    mut shutdown: tokio::sync::mpsc::UnboundedReceiver<()>,
+) -> anyhow::Result<()> {
+    let config = Config::get_or_create()?;
     println!("I am {}", config.secret_key.public());
     let endpoint = iroh_net::Endpoint::builder()
         .discovery(Box::new(
             iroh_net::discovery::pkarr::PkarrPublisher::n0_dns(config.secret_key.clone()),
         ))
         .secret_key(config.secret_key.clone())
-        .alpns(vec![muninn_proto::ALPN.into()])
+        .alpns(vec![munin_proto::ALPN.into()])
         .bind()
         .await?;
     endpoint.watch_home_relay().next().await;
@@ -27,8 +29,15 @@ pub async fn run_daemon(config: Config) -> anyhow::Result<()> {
     tracing::info!("Listening on {:?}", info);
     let ticket = NodeTicket::from(info);
     println!("My ticket: {}", ticket);
-    while let Some(incoming) = endpoint.accept().await {
-        tokio::spawn(handle_incoming(incoming, config.allowed_nodes.clone()));
+    loop {
+        tokio::select! {
+            _ = shutdown.recv() => {
+                break;
+            }
+            Some(incoming) = endpoint.accept() => {
+                tokio::spawn(handle_incoming(incoming, config.allowed_nodes.clone()));
+            }
+        }
     }
     Ok(())
 }
@@ -53,8 +62,8 @@ async fn handle_incoming(
         return Ok(());
     }
     let (mut send, mut recv) = connection.accept_bi().await?;
-    let msg = recv.read_to_end(muninn_proto::MAX_REQUEST_SIZE).await?;
-    let msg = postcard::from_bytes::<muninn_proto::Request>(&msg)?;
+    let msg = recv.read_to_end(munin_proto::MAX_REQUEST_SIZE).await?;
+    let msg = postcard::from_bytes::<munin_proto::Request>(&msg)?;
     match msg {
         Request::ListProcesses => {
             tracing::info!("Listing processes");
@@ -83,7 +92,7 @@ async fn handle_incoming(
             let hostname = hostname::get()?
                 .into_string()
                 .map_err(|_| anyhow::anyhow!("Invalid hostname"))?;
-            let response = muninn_proto::SysInfoResponse { uptime, hostname };
+            let response = munin_proto::SysInfoResponse { uptime, hostname };
             let response = postcard::to_allocvec(&response)?;
             send.write_all(&response).await?;
             send.finish()?;

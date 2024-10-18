@@ -58,6 +58,6 @@ pub struct SysInfoResponse {
     pub uptime: Duration,
 }
 
-pub const ALPN: &[u8] = b"muninn";
+pub const ALPN: &[u8] = b"munin";
 pub const MAX_REQUEST_SIZE: usize = 1024;
 pub const MAX_RESPONSE_SIZE: usize = 1024 * 1024;

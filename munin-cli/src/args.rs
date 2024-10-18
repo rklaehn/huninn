@@ -1,6 +1,6 @@
 use clap::Parser;
 use iroh_net::NodeId;
-use muninn_proto::AudioSource;
+use munin_proto::AudioSource;
 
 #[derive(Debug, Clone, Parser)]
 pub struct Args {

@@ -43,15 +43,15 @@ impl From<Config> for TomlConfig {
     }
 }
 
-pub fn muninn_data_root() -> anyhow::Result<PathBuf> {
-    const MUNINN_DIR: &str = "muninn-cli";
-    let path = if let Some(val) = std::env::var_os("MUNINN_DATA_DIR") {
+pub fn munin_data_root() -> anyhow::Result<PathBuf> {
+    const MUNIN_DIR: &str = "munin-cli";
+    let path = if let Some(val) = std::env::var_os("MUNIN_DATA_DIR") {
         PathBuf::from(val)
     } else {
         let path = dirs_next::data_dir().ok_or_else(|| {
             anyhow!("operating environment provides no directory for application data")
         })?;
-        path.join(MUNINN_DIR)
+        path.join(MUNIN_DIR)
     };
     let path = if !path.is_absolute() {
         std::env::current_dir()?.join(path)
@@ -63,17 +63,17 @@ pub fn muninn_data_root() -> anyhow::Result<PathBuf> {
 
 impl Config {
     pub fn save(&self) -> anyhow::Result<()> {
-        let dir = muninn_data_root()?;
+        let dir = munin_data_root()?;
         std::fs::create_dir_all(&dir)?;
         let path = dir.join("config.toml");
         let data = toml::to_string_pretty(&TomlConfig::from(self.clone()))?;
         tracing::info!("Saving config to {}", path.display());
-        std::fs::write(&path, &data)?;
+        std::fs::write(&path, data)?;
         Ok(())
     }
 
     pub fn get_or_create() -> anyhow::Result<Self> {
-        let dir = muninn_data_root()?;
+        let dir = munin_data_root()?;
         std::fs::create_dir_all(&dir)?;
         let path = dir.join("config.toml");
         if path.exists() {
@@ -89,7 +89,7 @@ impl Config {
                 nodes: BTreeMap::new(),
             };
             let data = toml::to_string_pretty(&TomlConfig::from(config.clone()))?;
-            std::fs::write(&path, &data)?;
+            std::fs::write(&path, data)?;
             Ok(config)
         }
     }

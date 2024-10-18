@@ -17,15 +17,17 @@ tracing = "0.1.40"
 dirs-next = "2.0.0"
 tracing-subscriber = "0.3.18"
 toml = "0.8.19"
-windows-service = "0.7.0"
 libc = "0.2.160"
 nix = "0.29.0"
 hostname = "0.4.0"
 rodio = "0.19.0"
 cpal = "0.15.3"
 bytes = "1.7.2"
+windows-service = "0.7.0"
 winapi = { version = "0.3.9", features = ["winuser"] }
+windows-sys = { version = "0.59.0", features = ["Win32"] }
 futures = "0.3.31"
+widestring = "1.1.0"
 
 [[bin]]
 name = "munin-daemon"

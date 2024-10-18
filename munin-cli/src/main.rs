@@ -16,7 +16,7 @@ fn get_nodes(ids: Vec<String>, config: &config::Config) -> Result<Vec<(String, N
         config
             .nodes
             .iter()
-            .map(|(name, id)| Ok((name.clone(), id.clone().into())))
+            .map(|(name, id)| Ok((name.clone(), (*id).into())))
             .collect()
     } else {
         ids.into_iter()
@@ -29,7 +29,7 @@ fn get_nodes(ids: Vec<String>, config: &config::Config) -> Result<Vec<(String, N
                         ticket.node_addr().clone(),
                     ))
                 } else if let Some(nodeid) = config.nodes.get(&id) {
-                    Ok((id, nodeid.clone().into()))
+                    Ok((id, (*nodeid).into()))
                 } else {
                     Err(anyhow::anyhow!("Neither node id nor valid alias: {}", id))
                 }
@@ -56,14 +56,14 @@ async fn main() -> anyhow::Result<()> {
             let endpoint = create_endpoint().await?;
             for (name, id) in nodes {
                 println!("Listing tasks for {}", name);
-                let connection = endpoint.connect(id.into(), muninn_proto::ALPN).await?;
+                let connection = endpoint.connect(id, munin_proto::ALPN).await?;
                 let (mut send, mut recv) = connection.open_bi().await?;
-                let request = muninn_proto::Request::ListProcesses;
+                let request = munin_proto::Request::ListProcesses;
                 let request = postcard::to_allocvec(&request)?;
                 send.write_all(&request).await?;
                 send.finish()?;
-                let msg = recv.read_to_end(muninn_proto::MAX_RESPONSE_SIZE).await?;
-                let msg = postcard::from_bytes::<muninn_proto::ListProcessesResponse>(&msg)?;
+                let msg = recv.read_to_end(munin_proto::MAX_RESPONSE_SIZE).await?;
+                let msg = postcard::from_bytes::<munin_proto::ListProcessesResponse>(&msg)?;
                 for (pid, name) in msg.tasks {
                     println!("{}: {}", pid, name);
                 }
@@ -74,7 +74,7 @@ async fn main() -> anyhow::Result<()> {
             let node = if let Ok(nodeid) = NodeId::from_str(&kill_task.id) {
                 nodeid
             } else if let Some(nodeid) = config.nodes.get(&kill_task.id) {
-                nodeid.clone()
+                *nodeid
             } else {
                 return Err(anyhow::anyhow!(
                     "Neither node id nor valid alias: {}",
@@ -82,13 +82,13 @@ async fn main() -> anyhow::Result<()> {
                 ));
             };
             let endpoint = create_endpoint().await?;
-            let connection = endpoint.connect(node.into(), muninn_proto::ALPN).await?;
+            let connection = endpoint.connect(node.into(), munin_proto::ALPN).await?;
             let (mut send, mut recv) = connection.open_bi().await?;
-            let request = muninn_proto::Request::KillProcess(kill_task.pid);
+            let request = munin_proto::Request::KillProcess(kill_task.pid);
             let request = postcard::to_allocvec(&request)?;
             send.write_all(&request).await?;
             send.finish()?;
-            let msg = recv.read_to_end(muninn_proto::MAX_RESPONSE_SIZE).await?;
+            let msg = recv.read_to_end(munin_proto::MAX_RESPONSE_SIZE).await?;
             let msg = postcard::from_bytes::<String>(&msg)?;
             println!("{}", msg);
             connection.close(0u32.into(), b"OK");
@@ -98,14 +98,14 @@ async fn main() -> anyhow::Result<()> {
             let endpoint = create_endpoint().await?;
             for (name, id) in nodes {
                 println!("Getting system info for {}", name);
-                let connection = endpoint.connect(id.into(), muninn_proto::ALPN).await?;
+                let connection = endpoint.connect(id, munin_proto::ALPN).await?;
                 let (mut send, mut recv) = connection.open_bi().await?;
-                let request = muninn_proto::Request::GetSystemInfo;
+                let request = munin_proto::Request::GetSystemInfo;
                 let request = postcard::to_allocvec(&request)?;
                 send.write_all(&request).await?;
                 send.finish()?;
-                let msg = recv.read_to_end(muninn_proto::MAX_RESPONSE_SIZE).await?;
-                let msg = postcard::from_bytes::<muninn_proto::SysInfoResponse>(&msg)?;
+                let msg = recv.read_to_end(munin_proto::MAX_RESPONSE_SIZE).await?;
+                let msg = postcard::from_bytes::<munin_proto::SysInfoResponse>(&msg)?;
                 println!("Hostname: {}", msg.hostname);
                 println!("Uptime: {:?}", msg.uptime);
                 connection.close(0u32.into(), b"OK");
@@ -116,13 +116,13 @@ async fn main() -> anyhow::Result<()> {
             let endpoint = create_endpoint().await?;
             for (name, id) in nodes {
                 println!("Playing audio on {}", name);
-                let connection = endpoint.connect(id.into(), muninn_proto::ALPN).await?;
+                let connection = endpoint.connect(id, munin_proto::ALPN).await?;
                 let (mut send, mut recv) = connection.open_bi().await?;
-                let request = muninn_proto::Request::PlayAudio(play_audio.source.clone());
+                let request = munin_proto::Request::PlayAudio(play_audio.source.clone());
                 let request = postcard::to_allocvec(&request)?;
                 send.write_all(&request).await?;
                 send.finish()?;
-                let msg = recv.read_to_end(muninn_proto::MAX_RESPONSE_SIZE).await?;
+                let msg = recv.read_to_end(munin_proto::MAX_RESPONSE_SIZE).await?;
                 let msg = postcard::from_bytes::<String>(&msg)?;
                 println!("{}", msg);
                 connection.close(0u32.into(), b"OK");
