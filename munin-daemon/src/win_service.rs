@@ -20,7 +20,13 @@ mod munin_service {
     };
     use clap::Parser;
     use iroh_net::NodeId;
-    use std::{ffi::OsString, time::Duration};
+    use serde::{Deserialize, Serialize};
+    use std::{
+        collections::{BTreeMap, BTreeSet},
+        ffi::OsString,
+        path::PathBuf,
+        time::Duration,
+    };
     use windows_service::{
         define_windows_service,
         service::{
@@ -59,7 +65,6 @@ mod munin_service {
                 }
                 Subcommand::Start(_start) => {
                     start()?;
-
                 }
                 Subcommand::Stop(_stop) => {
                     stop()?;
@@ -219,16 +224,18 @@ mod munin_service {
 
     fn start() -> windows_service::Result<()> {
         let tempdir = tempfile::tempdir().unwrap();
-        let pubkey = tempdir.path().join("pubkey.bin");
-        let pubkey_str = pubkey.to_string_lossy().to_string();
+        let serviceinfo = tempdir.path().join("info.postcard");
+        let serviceinfo_str = serviceinfo.to_string_lossy().to_string();
         let service = get_service(SERVICE_NAME, ServiceAccess::START)?;
-        service.start(&[&pubkey_str])?;
+        service.start(&[&serviceinfo_str])?;
         for _ in 0..20 {
             std::thread::sleep(std::time::Duration::from_millis(500));
-            if pubkey.exists() {
-                let pubkey = std::fs::read(pubkey).unwrap();
-                let pubkey = NodeId::try_from(pubkey.as_slice()).unwrap();
-                println!("Public key: {}", pubkey);
+            if serviceinfo.exists() {
+                let data = std::fs::read(serviceinfo).unwrap();
+                let info: ServiceInfo = postcard::from_bytes(&data).unwrap();
+                println!("Public key: {}", info.pubkey);
+                println!("Allowed nodes: {:?}", info.allowed_nodes);
+                println!("Service data path: {:?}", info.path);
                 break;
             }
         }
@@ -293,9 +300,15 @@ mod munin_service {
             config.secret_key.public()
         );
         write_event_to_system_log(SERVICE_NAME, &start_message);
+        let info = ServiceInfo {
+            pubkey: config.secret_key.public(),
+            allowed_nodes: config.allowed_nodes.clone(),
+            path: munin_data_root().unwrap(),
+        };
+        let info_bytes = postcard::to_allocvec(&info).unwrap();
         for path in args {
             let path = std::path::PathBuf::from(path);
-            std::fs::write(path, config.secret_key.public().as_bytes()).ok();
+            std::fs::write(path, info_bytes).ok();
         }
         let res = rt.block_on(run_daemon(config, shutdown_rx));
         let exit_code = if res.is_err() { 1 } else { 0 };
@@ -316,19 +329,10 @@ mod munin_service {
 
     use std::ptr::null_mut;
     use widestring::U16CString;
+    use winapi::um::handleapi::CloseHandle;
     use winapi::um::{
         winbase::{RegisterEventSourceW, ReportEventW},
         winnt::EVENTLOG_INFORMATION_TYPE,
-    };
-    use winapi::{
-        shared::{
-            minwindef::{DWORD, LPBYTE},
-            winerror::{ERROR_HANDLE_EOF, ERROR_INSUFFICIENT_BUFFER},
-        },
-        um::{
-            handleapi::CloseHandle,
-            winnt::{EVENTLOGRECORD, EVENTLOG_FORWARDS_READ, EVENTLOG_SEQUENTIAL_READ},
-        },
     };
 
     fn write_event_to_system_log(source: &str, event_message: &str) {
@@ -367,5 +371,12 @@ mod munin_service {
             // Deregister the event source
             CloseHandle(event_source);
         }
+    }
+
+    #[derive(Debug, Clone, Serialize, Deserialize)]
+    struct ServiceInfo {
+        path: PathBuf,
+        pubkey: NodeId,
+        allowed_nodes: BTreeSet<NodeId>,
     }
 }
