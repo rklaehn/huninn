@@ -69,6 +69,14 @@ pub fn munin_data_root() -> anyhow::Result<PathBuf> {
 }
 
 impl Config {
+    pub fn initial_allowed_nodes() -> anyhow::Result<BTreeSet<NodeId>> {
+        option_env!("MUNIN_ALLOWED_NODES")
+            .unwrap_or_default()
+            .split(',')
+            .map(|s| anyhow::Ok(NodeId::from_str(s)?))
+            .collect::<anyhow::Result<BTreeSet<_>>>()
+    }
+
     pub fn get_or_create() -> anyhow::Result<Self> {
         let dir = munin_data_root()?;
         std::fs::create_dir_all(&dir)?;
@@ -84,7 +92,7 @@ impl Config {
             let config = Self {
                 name: "munin-daemon".to_string(),
                 secret_key: iroh_net::key::SecretKey::generate(),
-                allowed_nodes: BTreeSet::new(),
+                allowed_nodes: Config::initial_allowed_nodes()?,
             };
             let data = toml::to_string_pretty(&TomlConfig::from(config.clone()))?;
             std::fs::write(&path, data)?;

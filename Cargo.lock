@@ -2298,6 +2298,7 @@ dependencies = [
  "dirs-next",
  "futures",
  "hostname 0.4.0",
+ "iroh-base",
  "iroh-net",
  "libc",
  "munin-proto",
