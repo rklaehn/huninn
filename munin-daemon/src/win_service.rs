@@ -217,8 +217,6 @@ mod munin_service {
         let service = get_service(SERVICE_NAME, ServiceAccess::START)?;
         let args: &[&OsStr] = &[];
         service.start(args)?;
-        std::thread::sleep(Duration::from_secs(1));
-        read_event_log();
         Ok(())
     }
 
