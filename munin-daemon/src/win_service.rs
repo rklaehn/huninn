@@ -13,7 +13,10 @@ fn main() {
 
 #[cfg(windows)]
 mod munin_service {
-    use crate::{args::Subcommand, shared::run_daemon};
+    use crate::{
+        args::Subcommand,
+        shared::{munin_data_root, run_daemon, Config},
+    };
     use clap::Parser;
     use std::{
         ffi::{OsStr, OsString},
@@ -102,7 +105,7 @@ mod munin_service {
             name: OsString::from(SERVICE_NAME),
             display_name: OsString::from(SERVICE_DESCRIPTION),
             service_type: ServiceType::OWN_PROCESS,
-            start_type: ServiceStartType::OnDemand,
+            start_type: ServiceStartType::AutoStart,
             error_control: ServiceErrorControl::Normal,
             executable_path: service_binary_path,
             launch_arguments: vec![],
@@ -270,7 +273,14 @@ mod munin_service {
         })?;
 
         let rt = tokio::runtime::Runtime::new().unwrap();
-        let res = rt.block_on(run_daemon(shutdown_rx));
+        let config = Config::get_or_create().unwrap();
+        let start_message = format!(
+            "Starting using data dir\n{}\nand id\n{}",
+            munin_data_root().unwrap().display(),
+            config.secret_key.public()
+        );
+        write_event_to_system_log(SERVICE_NAME, "Service started");
+        let res = rt.block_on(run_daemon(config, shutdown_rx));
         let exit_code = if res.is_err() { 1 } else { 0 };
 
         // Tell the system that service has stopped.

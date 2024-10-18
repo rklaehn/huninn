@@ -4,7 +4,7 @@ use iroh_net::{endpoint, ticket::NodeTicket, NodeId};
 use std::collections::BTreeSet;
 
 mod config;
-pub use config::Config;
+pub use config::{munin_data_root, Config};
 
 mod os;
 use os::{get_uptime, kill_process_by_id, list_processes, play_sound_on_default_device};
@@ -12,9 +12,9 @@ use os::{get_uptime, kill_process_by_id, list_processes, play_sound_on_default_d
 use munin_proto::{AudioSource, ListProcessesResponse, Request};
 
 pub async fn run_daemon(
+    config: Config,
     mut shutdown: tokio::sync::mpsc::UnboundedReceiver<()>,
 ) -> anyhow::Result<()> {
-    let config = Config::get_or_create()?;
     println!("I am {}", config.secret_key.public());
     let endpoint = iroh_net::Endpoint::builder()
         .discovery(Box::new(
