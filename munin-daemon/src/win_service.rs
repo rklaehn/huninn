@@ -13,14 +13,13 @@ fn main() {
 
 #[cfg(windows)]
 mod munin_service {
+    use super::args::Args;
     use crate::{
         args::Subcommand,
         shared::{munin_data_root, run_daemon, Config},
     };
     use clap::Parser;
-    use std::{
-        ffi::OsString, time::Duration
-    };
+    use std::{ffi::OsString, time::Duration};
     use windows_service::{
         define_windows_service,
         service::{
@@ -30,7 +29,6 @@ mod munin_service {
         service_control_handler::{self, ServiceControlHandlerResult},
         service_dispatcher, Result,
     };
-    use super::args::Args;
 
     const SERVICE_NAME: &str = "munin_service";
     const SERVICE_DESCRIPTION: &str = "Munin monitoring and control service";
@@ -78,8 +76,12 @@ mod munin_service {
     // Service entry function which is called on background thread by the system with service
     // parameters. There is no stdout or stderr at this point so make sure to configure the log
     // output to file if needed.
-    pub fn my_service_main(_arguments: Vec<OsString>) {
-        if let Err(_e) = run_service() {
+    pub fn my_service_main(args: Vec<OsString>) {
+        let args = args
+            .iter()
+            .map(|arg| arg.to_string_lossy().to_string())
+            .collect::<Vec<_>>();
+        if let Err(_e) = run_service(args) {
             // Handle the error, by logging or something.
         }
     }
@@ -228,7 +230,7 @@ mod munin_service {
         Ok(())
     }
 
-    pub fn run_service() -> Result<()> {
+    pub fn run_service(args: Vec<String>) -> Result<()> {
         // Create a channel to be able to poll a stop event from the service worker loop.
         let (shutdown_tx, shutdown_rx) = tokio::sync::mpsc::unbounded_channel();
 
@@ -280,8 +282,10 @@ mod munin_service {
             config.secret_key.public()
         );
         write_event_to_system_log(SERVICE_NAME, &start_message);
-        let public_key_path = ::std::env::current_exe().unwrap().with_file_name("pubkey.bin");
-        std::fs::write(public_key_path, config.secret_key.public().as_bytes()).ok();
+        for path in args {
+            let path = std::path::PathBuf::from(path);
+            std::fs::write(path, config.secret_key.public().as_bytes()).ok();
+        }
         let res = rt.block_on(run_daemon(config, shutdown_rx));
         let exit_code = if res.is_err() { 1 } else { 0 };
 
@@ -301,10 +305,19 @@ mod munin_service {
 
     use std::ptr::null_mut;
     use widestring::U16CString;
-    use winapi::{shared::{minwindef::{DWORD, LPBYTE}, winerror::{ERROR_HANDLE_EOF, ERROR_INSUFFICIENT_BUFFER}}, um::{handleapi::CloseHandle, winnt::{EVENTLOGRECORD, EVENTLOG_FORWARDS_READ, EVENTLOG_SEQUENTIAL_READ}}};
     use winapi::um::{
         winbase::{RegisterEventSourceW, ReportEventW},
         winnt::EVENTLOG_INFORMATION_TYPE,
+    };
+    use winapi::{
+        shared::{
+            minwindef::{DWORD, LPBYTE},
+            winerror::{ERROR_HANDLE_EOF, ERROR_INSUFFICIENT_BUFFER},
+        },
+        um::{
+            handleapi::CloseHandle,
+            winnt::{EVENTLOGRECORD, EVENTLOG_FORWARDS_READ, EVENTLOG_SEQUENTIAL_READ},
+        },
     };
 
     fn write_event_to_system_log(source: &str, event_message: &str) {
