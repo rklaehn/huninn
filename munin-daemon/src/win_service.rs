@@ -279,7 +279,7 @@ mod munin_service {
             munin_data_root().unwrap().display(),
             config.secret_key.public()
         );
-        write_event_to_system_log(SERVICE_NAME, "Service started");
+        write_event_to_system_log(SERVICE_NAME, &start_message);
         let res = rt.block_on(run_daemon(config, shutdown_rx));
         let exit_code = if res.is_err() { 1 } else { 0 };
 
