@@ -61,6 +61,11 @@ Addressing the node by node id can get tedious, so you can also define an alias:
 
 ```
 > munin add-node --name minipc qblg7tefz6jek3hynvdgvjchlj4zqyhizn67ji2fm4ko5ro7wbsq
+```
+
+then later
+
+```
 > munin list-tasks minipc
 72: Secure System
 8396: svchost.exe
