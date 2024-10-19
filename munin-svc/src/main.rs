@@ -19,7 +19,7 @@ mod munin_service {
     use crate::args::Subcommand;
     use munin_server::Config;
     use clap::Parser;
-    use iroh_net::NodeId;
+    use iroh_base::key::NodeId;
     use serde::{Deserialize, Serialize};
     use std::{
         collections::BTreeSet,
