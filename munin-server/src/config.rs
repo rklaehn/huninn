@@ -70,11 +70,13 @@ fn munin_data_root() -> anyhow::Result<PathBuf> {
 
 impl Config {
     pub fn initial_allowed_nodes() -> anyhow::Result<BTreeSet<NodeId>> {
-        option_env!("MUNIN_ALLOWED_NODES")
-            .unwrap_or_default()
-            .split(',')
-            .map(|s| anyhow::Ok(NodeId::from_str(s)?))
-            .collect::<anyhow::Result<BTreeSet<_>>>()
+        match std::env::var("MUNIN_ALLOWED_NODES") {
+            Ok(val) => val
+                .split(',')
+                .map(|s| Ok(NodeId::from_str(s)?))
+                .collect::<Result<_, _>>(),
+            Err(_) => Ok(BTreeSet::new()),
+        }
     }
 
     pub fn default_path() -> anyhow::Result<PathBuf> {

@@ -7,7 +7,7 @@ edition = "2021"
 anyhow = "1.0.89"
 clap = { version = "4.5.20", features = ["derive"] }
 tokio = { version = "1.40.0", features = ["full"] }
-tracing-subscriber = "0.3.18"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 munin-server = { path = "../munin-server" }
 
 [build-dependencies]

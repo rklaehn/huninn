@@ -3,6 +3,7 @@ use std::str::FromStr;
 use anyhow::Result;
 use args::Subcommand;
 use clap::Parser;
+use config::Config;
 use iroh_net::{ticket::NodeTicket, NodeAddr, NodeId};
 
 mod args;
@@ -41,7 +42,21 @@ fn get_nodes(ids: Vec<String>, config: &config::Config) -> Result<Vec<(String, N
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
-    let mut config = config::Config::get_or_create()?;
+    let config = config::Config::get_or_create()?;
+    let pubkey = config.secret_key.public();
+    let res = main_impl(config).await;
+    if let Err(err) = &res {
+        let text = format!("{:?}", err);
+        if text.contains("unauthorized node") {
+            println!("The remote node rejected the connection");
+            println!("You need to add {pubkey} to the list of allowed nodes");
+            std::process::exit(1);
+        }
+    }
+    res
+}
+
+async fn main_impl(mut config: Config) -> anyhow::Result<()> {
     println!("I am {}", config.secret_key.public());
     let args = args::Args::parse();
     let create_endpoint = || {

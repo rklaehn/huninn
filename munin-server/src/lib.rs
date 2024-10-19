@@ -7,7 +7,9 @@ mod config;
 pub use config::Config;
 
 mod os;
-use os::{get_uptime, kill_process_by_id, list_processes, play_sound_on_default_device, shutdown_system};
+use os::{
+    get_uptime, kill_process_by_id, list_processes, play_sound_on_default_device, shutdown_system,
+};
 
 use munin_proto::{AudioSource, ListProcessesResponse, Request};
 
@@ -54,7 +56,7 @@ async fn handle_incoming(
     let connection = accepting.await?;
     let remote_node_id = iroh_net::endpoint::get_remote_node_id(&connection)?;
     if !allowed_nodes.contains(&remote_node_id) {
-        connection.close(1u32.into(), b"unauthorized node");
+        connection.close(403u32.into(), b"unauthorized node");
         tracing::info!(
             "Unauthorized node attempted to connect: {:?}",
             remote_node_id
