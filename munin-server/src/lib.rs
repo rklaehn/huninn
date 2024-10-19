@@ -7,7 +7,7 @@ mod config;
 pub use config::Config;
 
 mod os;
-use os::{get_uptime, kill_process_by_id, list_processes, play_sound_on_default_device};
+use os::{get_uptime, kill_process_by_id, list_processes, play_sound_on_default_device, shutdown_system};
 
 use munin_proto::{AudioSource, ListProcessesResponse, Request};
 
@@ -118,7 +118,7 @@ async fn handle_incoming(
             connection.closed().await;
         }
         Request::Shutdown => {
-            // shutdown_system();
+            shutdown_system();
         }
     }
     connection.closed().await;
