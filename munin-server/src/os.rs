@@ -2,7 +2,7 @@ use std::{io, time::Duration};
 
 use bytes::Bytes;
 use cpal::traits::HostTrait;
-use rodio::{source, DeviceTrait, Source};
+use rodio::{DeviceTrait, Source};
 
 pub fn list_processes() -> Vec<(u32, String)> {
     // Create a System object to get information about the system.
@@ -116,7 +116,6 @@ pub fn shutdown_system() {
 
     #[cfg(target_os = "windows")]
     {
-        use std::ptr;
         use winapi::um::winuser::ExitWindowsEx;
         use winapi::um::winuser::EWX_POWEROFF;
 
@@ -158,9 +157,9 @@ pub fn kill_process_by_id(pid: u32) -> io::Result<()> {
             CloseHandle(handle);
 
             if result != 0 {
-                return Ok(());
+                Ok(())
             } else {
-                return Err(io::Error::last_os_error());
+                Err(io::Error::last_os_error())
             }
         }
     }
@@ -171,6 +170,7 @@ pub fn kill_process_by_id(pid: u32) -> io::Result<()> {
     }
 }
 
+#[allow(dead_code)]
 pub fn play_audio_on_all_devices(audio_data: Bytes) -> anyhow::Result<Vec<String>> {
     // Get the default host and all available output devices
     let host = cpal::default_host();
@@ -179,7 +179,7 @@ pub fn play_audio_on_all_devices(audio_data: Bytes) -> anyhow::Result<Vec<String
         .expect("Failed to get output devices")
         .collect::<Vec<_>>();
 
-    if devices.len() == 0 {
+    if devices.is_empty() {
         eprintln!("No audio output devices found!");
         return Ok(vec![]);
     } else {

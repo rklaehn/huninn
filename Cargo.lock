@@ -2367,7 +2367,6 @@ dependencies = [
  "serde",
  "tempfile",
  "tokio",
- "winapi",
  "windows-service",
  "windows-sys 0.59.0",
 ]

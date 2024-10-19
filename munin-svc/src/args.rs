@@ -8,32 +8,14 @@ pub struct Args {
 
 #[derive(Debug, Clone, Parser)]
 pub enum Subcommand {
-    Install(Install),
-    Uninstall(Uninstall),
-    QueryConfig(QueryConfig),
-    Pause(Pause),
-    Resume(Resume),
+    Install,
+    Uninstall,
+    QueryConfig,
+    Pause,
+    Resume,
     Start(Start),
-    Stop(Stop),
+    Stop,
 }
 
 #[derive(Debug, Clone, Parser)]
-pub struct Install {}
-
-#[derive(Debug, Clone, Parser)]
-pub struct Uninstall {}
-
-#[derive(Debug, Clone, Parser)]
-pub struct QueryConfig {}
-
-#[derive(Debug, Clone, Parser)]
-pub struct Pause {}
-
-#[derive(Debug, Clone, Parser)]
-pub struct Resume {}
-
-#[derive(Debug, Clone, Parser)]
 pub struct Start {}
-
-#[derive(Debug, Clone, Parser)]
-pub struct Stop {}

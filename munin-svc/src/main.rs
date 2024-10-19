@@ -17,16 +17,11 @@ fn main() {
 mod munin_service {
     use super::args::Args;
     use crate::args::Subcommand;
-    use munin_server::Config;
     use clap::Parser;
     use iroh_base::key::NodeId;
+    use munin_server::Config;
     use serde::{Deserialize, Serialize};
-    use std::{
-        collections::BTreeSet,
-        ffi::OsString,
-        path::PathBuf,
-        time::Duration,
-    };
+    use std::{collections::BTreeSet, ffi::OsString, path::PathBuf, time::Duration};
     use windows_service::{
         define_windows_service,
         service::{
@@ -48,25 +43,25 @@ mod munin_service {
         if let Err(_err) = res {
             let args = Args::parse();
             match args.subcommand {
-                Subcommand::Install(_install) => {
+                Subcommand::Install => {
                     install_service()?;
                 }
-                Subcommand::Uninstall(_uninstall) => {
+                Subcommand::Uninstall => {
                     uninstall_service()?;
                 }
-                Subcommand::QueryConfig(_query_config) => {
+                Subcommand::QueryConfig => {
                     query_config()?;
                 }
-                Subcommand::Pause(_pause) => {
+                Subcommand::Pause => {
                     pause()?;
                 }
-                Subcommand::Resume(_resume) => {
+                Subcommand::Resume => {
                     resume()?;
                 }
                 Subcommand::Start(_start) => {
                     start()?;
                 }
-                Subcommand::Stop(_stop) => {
+                Subcommand::Stop => {
                     stop()?;
                 }
             }
