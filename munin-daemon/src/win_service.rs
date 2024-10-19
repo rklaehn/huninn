@@ -5,7 +5,7 @@ mod args;
 mod shared;
 
 #[cfg(windows)]
-fn main() -> windows_service::Result<()> {
+fn main() -> anyhow::Result<()> {
     munin_service::run()
 }
 
@@ -44,7 +44,7 @@ mod munin_service {
     const SERVICE_DESCRIPTION: &str = "Munin monitoring and control service";
     const SERVICE_TYPE: ServiceType = ServiceType::OWN_PROCESS;
 
-    pub fn run() -> Result<()> {
+    pub fn run() -> anyhow::Result<()> {
         // Register generated `ffi_service_main` with the system and start the service, blocking
         // this thread until the service is stopped.
         let res = service_dispatcher::start(SERVICE_NAME, ffi_service_main);
@@ -97,7 +97,7 @@ mod munin_service {
     }
 
     /// Installs yourself as a service
-    fn install_service() -> windows_service::Result<()> {
+    fn install_service() -> anyhow::Result<()> {
         use std::ffi::OsString;
         use windows_service::{
             service::{
@@ -129,7 +129,7 @@ mod munin_service {
         Ok(())
     }
 
-    fn uninstall_service() -> windows_service::Result<()> {
+    fn uninstall_service() -> anyhow::Result<()> {
         use std::{
             thread::sleep,
             time::{Duration, Instant},
@@ -179,7 +179,7 @@ mod munin_service {
         Ok(())
     }
 
-    fn query_config() -> windows_service::Result<()> {
+    fn query_config() -> anyhow::Result<()> {
         use windows_service::{
             service::ServiceAccess,
             service_manager::{ServiceManager, ServiceManagerAccess},
@@ -219,13 +219,13 @@ mod munin_service {
         Ok(())
     }
 
-    fn resume() -> windows_service::Result<()> {
+    fn resume() -> anyhow::Result<()> {
         let service = get_service(SERVICE_NAME, ServiceAccess::PAUSE_CONTINUE)?;
         service.resume()?;
         Ok(())
     }
 
-    fn start() -> windows_service::Result<()> {
+    fn start() -> anyhow::Result<()> {
         let tempdir = tempfile::tempdir().unwrap();
         let serviceinfo = tempdir.path().join("info.postcard");
         let serviceinfo_str = serviceinfo.to_string_lossy().to_string();
@@ -248,7 +248,7 @@ mod munin_service {
         Ok(())
     }
 
-    fn stop() -> windows_service::Result<()> {
+    fn stop() -> anyhow::Result<()> {
         let service = get_service(SERVICE_NAME, ServiceAccess::STOP)?;
         service.stop()?;
         Ok(())
