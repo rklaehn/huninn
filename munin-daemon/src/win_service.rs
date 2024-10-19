@@ -1,3 +1,6 @@
+//! A windows service that acts as its own installer and uninstaller.
+//!
+//! Mostly copied from the [windows_service crate examples](https://github.com/mullvad/windows-service-rs/tree/main/examples).
 mod args;
 mod shared;
 
@@ -22,7 +25,7 @@ mod munin_service {
     use iroh_net::NodeId;
     use serde::{Deserialize, Serialize};
     use std::{
-        collections::{BTreeMap, BTreeSet},
+        collections::BTreeSet,
         ffi::OsString,
         path::PathBuf,
         time::Duration,
