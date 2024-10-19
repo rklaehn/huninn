@@ -41,9 +41,9 @@ fn get_nodes(ids: Vec<String>, config: &config::Config) -> Result<Vec<(String, N
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
-    let args = args::Args::parse();
     let mut config = config::Config::get_or_create()?;
     println!("I am {}", config.secret_key.public());
+    let args = args::Args::parse();
     let create_endpoint = || {
         iroh_net::Endpoint::builder()
             .discovery(Box::new(iroh_net::discovery::dns::DnsDiscovery::n0_dns()))
