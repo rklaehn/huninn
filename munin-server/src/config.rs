@@ -50,7 +50,7 @@ impl From<Config> for TomlConfig {
     }
 }
 
-pub fn munin_data_root() -> anyhow::Result<PathBuf> {
+fn munin_data_root() -> anyhow::Result<PathBuf> {
     const MUNIN_DIR: &str = "munin-daemon";
     let path = if let Some(val) = std::env::var_os("MUNIN_DATA_DIR") {
         PathBuf::from(val)
@@ -75,6 +75,11 @@ impl Config {
             .split(',')
             .map(|s| anyhow::Ok(NodeId::from_str(s)?))
             .collect::<anyhow::Result<BTreeSet<_>>>()
+    }
+
+    pub fn default_path() -> anyhow::Result<PathBuf> {
+        let dir = munin_data_root()?;
+        Ok(dir.join("config.toml"))
     }
 
     pub fn get_or_create() -> anyhow::Result<Self> {

@@ -43,7 +43,7 @@ impl From<Config> for TomlConfig {
     }
 }
 
-pub fn munin_data_root() -> anyhow::Result<PathBuf> {
+fn munin_data_root() -> anyhow::Result<PathBuf> {
     const MUNIN_DIR: &str = "munin-cli";
     let path = if let Some(val) = std::env::var_os("MUNIN_DATA_DIR") {
         PathBuf::from(val)

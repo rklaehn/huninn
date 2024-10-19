@@ -4,14 +4,14 @@ use iroh_net::{endpoint, ticket::NodeTicket, NodeId};
 use std::collections::BTreeSet;
 
 mod config;
-pub use config::{munin_data_root, Config};
+pub use config::Config;
 
 mod os;
 use os::{get_uptime, kill_process_by_id, list_processes, play_sound_on_default_device};
 
 use munin_proto::{AudioSource, ListProcessesResponse, Request};
 
-pub async fn run_daemon(
+pub async fn run(
     config: Config,
     mut shutdown: tokio::sync::mpsc::UnboundedReceiver<()>,
 ) -> anyhow::Result<()> {
@@ -42,9 +42,9 @@ pub async fn run_daemon(
     Ok(())
 }
 
-const WAKE_UP: &[u8] = include_bytes!("../../assets/wake_up.mp3");
-const ALARM: &[u8] = include_bytes!("../../assets/alarm.mp3");
-const RICKROLL: &[u8] = include_bytes!("../../assets/rickroll.mp3");
+const WAKE_UP: &[u8] = include_bytes!("../assets/wake_up.mp3");
+const ALARM: &[u8] = include_bytes!("../assets/alarm.mp3");
+const RICKROLL: &[u8] = include_bytes!("../assets/rickroll.mp3");
 
 async fn handle_incoming(
     incoming: endpoint::Incoming,

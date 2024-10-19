@@ -31,7 +31,7 @@ pub fn get_uptime() -> io::Result<Duration> {
         }
         let info = unsafe { info.assume_init() };
         let uptime = info.uptime as u64;
-        return Ok(Duration::from_secs(uptime));
+        Ok(Duration::from_secs(uptime))
     }
 
     #[cfg(target_os = "macos")]
@@ -53,20 +53,20 @@ pub fn get_uptime() -> io::Result<Duration> {
             .expect("System time before UNIX EPOCH");
 
         let uptime = current_time.as_secs() - boot_time;
-        return Ok(Duration::from_secs(uptime));
+        Ok(Duration::from_secs(uptime))
     }
 
     #[cfg(windows)]
     {
         use winapi::um::sysinfoapi::GetTickCount64;
         let uptime_ms = unsafe { GetTickCount64() };
-        return Ok(Duration::from_millis(uptime_ms));
+        Ok(Duration::from_millis(uptime_ms))
     }
 
     // If for some reason we are on an unsupported platform, return an error.
     #[cfg(not(any(target_os = "linux", target_os = "macos", windows)))]
     {
-        return Err(io::Error::new(io::ErrorKind::Other, "Unsupported platform"));
+        Err(io::Error::new(io::ErrorKind::Other, "Unsupported platform"))
     }
 }
 

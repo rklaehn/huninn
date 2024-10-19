@@ -2,7 +2,6 @@
 //!
 //! Mostly copied from the [windows_service crate examples](https://github.com/mullvad/windows-service-rs/tree/main/examples).
 mod args;
-mod shared;
 
 #[cfg(windows)]
 fn main() -> anyhow::Result<()> {
@@ -17,10 +16,8 @@ fn main() {
 #[cfg(windows)]
 mod munin_service {
     use super::args::Args;
-    use crate::{
-        args::Subcommand,
-        shared::{munin_data_root, run_daemon, Config},
-    };
+    use crate::args::Subcommand;
+    use munin_server::Config;
     use clap::Parser;
     use iroh_net::NodeId;
     use serde::{Deserialize, Serialize};
@@ -303,14 +300,14 @@ mod munin_service {
         let info = ServiceInfo {
             pubkey: config.secret_key.public(),
             allowed_nodes: config.allowed_nodes.clone(),
-            path: munin_data_root().unwrap(),
+            path: Config::default_path().unwrap(),
         };
         let info_bytes = postcard::to_allocvec(&info).unwrap();
         for path in args {
             let path = std::path::PathBuf::from(path);
             std::fs::write(path, &info_bytes).ok();
         }
-        let res = rt.block_on(run_daemon(config, shutdown_rx));
+        let res = rt.block_on(munin_server::run(config, shutdown_rx));
         let exit_code = if res.is_err() { 1 } else { 0 };
 
         // Tell the system that service has stopped.

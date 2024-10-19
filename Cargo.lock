@@ -2304,12 +2304,35 @@ dependencies = [
 ]
 
 [[package]]
-name = "munin-daemon"
+name = "munin-d"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "iroh-base",
+ "munin-server",
+ "tokio",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "munin-proto"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "iroh-net",
+ "postcard",
+ "serde",
+ "tokio",
+]
+
+[[package]]
+name = "munin-server"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "bytes",
- "clap",
  "cpal",
  "dirs-next",
  "futures",
@@ -2323,7 +2346,6 @@ dependencies = [
  "rodio",
  "serde",
  "sysinfo",
- "tempfile",
  "tokio",
  "toml",
  "tracing",
@@ -2334,15 +2356,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "munin-proto"
+name = "munin-svc"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
- "iroh-net",
+ "iroh-base",
+ "munin-server",
  "postcard",
  "serde",
+ "tempfile",
  "tokio",
+ "winapi",
+ "windows-service",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
